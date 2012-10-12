@@ -1,11 +1,23 @@
-# Sample Python/Pygame Programs
-# Simpson College Computer Science
-# http://cs.simpson.edu
 
 import pygame
 import random
 
 #  Classes  #
+
+class Snowflake:
+    def __init__(self, xPosition, yPosition, radius, speed):
+        self.x = xPosition
+        self.y = yPosition
+        self.r = radius
+        self.speed = speed
+        self.position = [self.x, self.y]
+
+    def __str__(self):
+        return('(%d, %d)' % (self.x, self.y))
+
+    def move(self, x, y):
+        self.x += x
+        self.y += y
 
 
 
