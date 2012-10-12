@@ -16,9 +16,9 @@ class Snowflake:
     def __str__(self):
         return('(%d, %d)' % (self.x, self.y))
 
-    def move(self, position):
-        self.x += position[0]
-        self.y += position[1]
+    def move(self, x, y):
+        self.x += x
+        self.y += y
 
     def distance_from(self, position):
         distance = sqrt((self.x - position[0])**2
@@ -42,7 +42,6 @@ class Snowflake:
         else:
             self.speed = 1
 
-
 # Define some colors
 black    = (   0,   0,   0)
 white    = ( 255, 255, 255)
@@ -54,7 +53,7 @@ pygame.init()
 # Set the width and height of the screen [width,height]
 X_MAX = 1200
 X_MID = X_MAX // 2
-Y_MAX = 700
+Y_MAX = 500
 size=[X_MAX, Y_MAX]
 screen = pygame.display.set_mode(size)
 
@@ -67,7 +66,7 @@ done=False
 clock=pygame.time.Clock()
 
 # This is your position
-# snowball = [349, 10]
+snowball = Snowflake(X_MID, 20, 1, 1, green)
 
 # Other snowflakes' positions
 snow_position = []
@@ -76,8 +75,8 @@ for i in range(50):
     y = random.randrange(0, Y_MAX)
     snow_position.append([x, y])
 
-# Speed of snowflakes
-speed = 100
+# Frames of screen
+frames = 20
 
 # def snowball(screen, x, y
 
@@ -90,15 +89,40 @@ while done==False:
     for event in pygame.event.get(): # User did something
         if event.type == pygame.QUIT: # If user clicked close
             done=True # Flag that we are done so we exit this loop
+    
+    # Admin stuff
+    if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_u:
+            speed += 1
+            print('frames: %d' % frames)
+        if event.key == pygame.K_d:
+            speed -= 1
+            print('frames: %d' % frames)
+        if event.key == pygame.K_UP:
+            snowball.change_speed(1)
+            print('snowball speed: %d' % snowball.speed)
+        if event.key == pygame.K_DOWN:
+            snowball.change_speed(-1)
+            print('snowball speed: %d' % snowball.speed)
 
     screen.fill(black)
 
+    # Moving snowball
+    if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_LEFT:
+            snowball.move(-snowball.speed, 0)
+            print('snowball position: %d' % snowball.x)
+        if event.key == pygame.K_RIGHT:
+            snowball.move(snowball.speed, 0)
+            print('snowball position: %d' % snowball.x)
+    
     # Draw snowball
     #counter += 1
     #if counter > 200:
     #    the_size += 1
     #    counter == 0
-    pygame.draw.circle(screen, green, [X_MID, 100], 200)
+    pygame.draw.circle(screen, snowball.color
+                       , [snowball.x, snowball.y] , snowball.r)
 
     for (index, snowflake) in enumerate(snow_position):
         pygame.draw.circle(screen, white, snowflake, 2)
@@ -116,7 +140,7 @@ while done==False:
     pygame.display.flip()
 
     # speed
-    clock.tick(speed)
+    clock.tick(frames)
 
 # Close the window and quit.
 # If you forget this line, the program will 'hang'
