@@ -1,24 +1,46 @@
-
+import math
 import pygame
 import random
 
 #  Classes  #
 
 class Snowflake:
-    def __init__(self, xPosition, yPosition, radius, speed):
+    def __init__(self, xPosition, yPosition, radius, speed, color):
         self.x = xPosition
         self.y = yPosition
         self.r = radius
         self.speed = speed
+        self.color = color
         self.position = [self.x, self.y]
 
     def __str__(self):
         return('(%d, %d)' % (self.x, self.y))
 
-    def move(self, x, y):
-        self.x += x
-        self.y += y
+    def move(self, position):
+        self.x += position[0]
+        self.y += position[1]
 
+    def distance_from(self, position):
+        distance = sqrt((self.x - position[0])**2
+                         + (self.y - position[1])**2)
+        return(distance)
+
+    def resize(self, amount):
+        if (self.r + amount) > 0:
+            self.r + amount
+        else:
+            self.r == 1 # Cannot resize to nothing
+
+    def recolor(self, newColor):
+        # Make super colors later maybe
+        # maybe the snow will be RGB and add to each RGB value!
+        self.color = newColor
+
+    def change_speed(self, amount):
+        if (self.speed + amount) > 0:
+            self.speed += amount
+        else:
+            self.speed = 1
 
 
 # Define some colors
