@@ -2,6 +2,10 @@ import math
 import pygame
 import random
 
+#  Global Parameters  #
+
+WIND_MAX = 10
+
 #  Classes  #
 
 class Snowflake:
@@ -11,7 +15,7 @@ class Snowflake:
         self.r = radius
         self.speed = speed
         self.color = color
-        self.position = [self.x, self.y]
+        self.area = math.pi * self.r**2
 
     def __str__(self):
         return('(%d, %d)' % (self.x, self.y))
@@ -21,8 +25,8 @@ class Snowflake:
         self.y += y
 
     def distance_from(self, position):
-        distance = sqrt((self.x - position[0])**2
-                         + (self.y - position[1])**2)
+        distance = math.sqrt((self.x - position[0])**2
+                             + (self.y - position[1])**2)
         return(distance)
 
     def resize(self, amount):
@@ -41,6 +45,33 @@ class Snowflake:
             self.speed += amount
         else:
             self.speed = 1
+
+
+class Wind:
+    def __init__(self, speed):
+        self.speed = speed
+
+    def change_speed(self, amount):
+        new_speed = self.speed + amount
+        if fabs(new_speed) <= WIND_MAX:
+            self.speed += amount
+        else:
+            self.speed = math.copysign(WIND_MAX, new_speed)
+
+    #def effect_on(self, obj):
+    #    return(wind.speed dampens by obj.r // 5?
+
+#  Functions  #
+
+def collision(xOne, yOne, rOne, xTwo, yTwo, rTwo):
+    """Given size and space parameters for each object, return boolean for
+       whether collision occurs"""
+    origin_distance = math.sqrt((xOne - xTwo)**2 + (yOne - yTwo)**2)
+    collision_distance = rOne + rTwo
+    if origin_distance <= collision_distance:
+        return(True)
+    else:
+        return(False)
 
 # Define some colors
 black    = (   0,   0,   0)
@@ -66,11 +97,11 @@ done=False
 clock=pygame.time.Clock()
 
 # This is your position
-snowball = Snowflake(X_MID, 20, 1, 1, green)
+snowball = Snowflake(X_MID, 20, 10, 1, green)
 
 # Other snowflakes' positions
 snow_position = []
-for i in range(50):
+for i in range(500):
     x = random.randrange(0, X_MAX)
     y = random.randrange(0, Y_MAX)
     snow_position.append([x, y])
@@ -80,23 +111,23 @@ frames = 20
 
 # def snowball(screen, x, y
 
-counter = 0
-the_size = 1
-
 # -------- Main Program Loop -----------
 
 while done==False:
     for event in pygame.event.get(): # User did something
         if event.type == pygame.QUIT: # If user clicked close
             done=True # Flag that we are done so we exit this loop
-    
+
     # Admin stuff
     if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_ESCAPE:
+            print('done')
+            break
         if event.key == pygame.K_u:
-            speed += 1
+            frames += 1
             print('frames: %d' % frames)
         if event.key == pygame.K_d:
-            speed -= 1
+            frames -= 1
             print('frames: %d' % frames)
         if event.key == pygame.K_UP:
             snowball.change_speed(1)
@@ -115,12 +146,8 @@ while done==False:
         if event.key == pygame.K_RIGHT:
             snowball.move(snowball.speed, 0)
             print('snowball position: %d' % snowball.x)
-    
+
     # Draw snowball
-    #counter += 1
-    #if counter > 200:
-    #    the_size += 1
-    #    counter == 0
     pygame.draw.circle(screen, snowball.color
                        , [snowball.x, snowball.y] , snowball.r)
 
@@ -131,7 +158,15 @@ while done==False:
         snowflake[1] -= 1
 
         # If snowflake moved off screen
-        if snowflake[1] == 0:
+        if snowflake[1] < -20:
+            y = random.randrange(Y_MAX + 20, Y_MAX + 50)
+            x = random.randrange(0, X_MAX)
+            snow_position[index] = [x, y]
+
+        if collision(snowball.x, snowball.y, snowball.r, snowflake[0], snowflake[1], 1):
+            snowball.area += math.pi
+            print('snowball area: %d' % snowball.area)
+            snowball.r = int(math.sqrt(snowball.area/math.pi))
             y = random.randrange(Y_MAX + 20, Y_MAX + 50)
             x = random.randrange(0, X_MAX)
             snow_position[index] = [x, y]
