@@ -104,12 +104,11 @@ snow_position = []
 for i in range(500):
     x = random.randrange(0, X_MAX)
     y = random.randrange(0, Y_MAX)
-    snow_position.append([x, y])
+    r = random.randrange(1, (snowball.r*5)/4)
+    snow_position.append([x, y, r])
 
 # Frames of screen
 frames = 20
-
-# def snowball(screen, x, y
 
 # -------- Main Program Loop -----------
 
@@ -152,7 +151,7 @@ while done==False:
                        , [snowball.x, snowball.y] , snowball.r)
 
     for (index, snowflake) in enumerate(snow_position):
-        pygame.draw.circle(screen, white, snowflake, 2)
+        pygame.draw.circle(screen, white, snowflake[:-1], snowflake[2])
 
         # Move other snowflakes up one pixel
         snowflake[1] -= 1
@@ -161,15 +160,18 @@ while done==False:
         if snowflake[1] < -20:
             y = random.randrange(Y_MAX + 20, Y_MAX + 50)
             x = random.randrange(0, X_MAX)
-            snow_position[index] = [x, y]
+            r = random.randrange(1, (snowball.r*5)/4)
+            snow_position[index] = [x, y, r]
 
-        if collision(snowball.x, snowball.y, snowball.r, snowflake[0], snowflake[1], 1):
-            snowball.area += math.pi
+        if collision(snowball.x, snowball.y, snowball.r
+                     , snowflake[0], snowflake[1], snowflake[2]):
+            snowball.area += math.pi * snowflake[2]
             print('snowball area: %d' % snowball.area)
             snowball.r = int(math.sqrt(snowball.area/math.pi))
             y = random.randrange(Y_MAX + 20, Y_MAX + 50)
             x = random.randrange(0, X_MAX)
-            snow_position[index] = [x, y]
+            r = random.randrange(1, (snowball.r*5)/4)
+            snow_position[index] = [x, y, r]
 
     # Go ahead and update the screen with what we've drawn.
     pygame.display.flip()
