@@ -6,14 +6,22 @@ import random
 
 WIND_MAX = 10
 
+# Set the width and height of the screen [width,height]
+
+X_MAX = 1200
+X_MID = X_MAX // 2
+Y_MAX = 500
+SCREEN_SIZE =[X_MAX, Y_MAX]
+
 #  Classes  #
 
 class Snowflake:
-    def __init__(self, xPosition, yPosition, radius, speed, color):
+    def __init__(self, xPosition, yPosition, radius, speed, density, color):
         self.x = xPosition
         self.y = yPosition
         self.r = radius
         self.speed = speed
+        self.density = density
         self.color = color
         self.area = math.pi * self.r**2
 
@@ -81,12 +89,8 @@ red      = ( 255,   0,   0)
 
 pygame.init()
 
-# Set the width and height of the screen [width,height]
-X_MAX = 1200
-X_MID = X_MAX // 2
-Y_MAX = 500
-size=[X_MAX, Y_MAX]
-screen = pygame.display.set_mode(size)
+
+screen = pygame.display.set_mode(SCREEN_SIZE)
 
 pygame.display.set_caption("snowball: bad luck")
 
@@ -97,14 +101,14 @@ done=False
 clock=pygame.time.Clock()
 
 # This is your position
-snowball = Snowflake(X_MID, 20, 10, 1, green)
+snowball = Snowflake(X_MID, 20, 10, 1, 1, green)
 
 # Other snowflakes' positions
 snow_position = []
 for i in range(500):
     x = random.randrange(0, X_MAX)
     y = random.randrange(0, Y_MAX)
-    r = random.randrange(1, (snowball.r*5)/4)
+    r = random.randrange(1, 8)
     snow_position.append([x, y, r])
 
 # Frames of screen
@@ -128,17 +132,23 @@ while done==False:
         if event.key == pygame.K_d:
             frames -= 1
             print('frames: %d' % frames)
-        if event.key == pygame.K_UP:
-            snowball.change_speed(1)
-            print('snowball speed: %d' % snowball.speed)
-        if event.key == pygame.K_DOWN:
-            snowball.change_speed(-1)
-            print('snowball speed: %d' % snowball.speed)
+#        if event.key == pygame.K_UP:
+#            snowball.change_speed(1)
+#            print('snowball speed: %d' % snowball.speed)
+#        if event.key == pygame.K_DOWN:
+#            snowball.change_speed(-1)
+#            print('snowball speed: %d' % snowball.speed)
 
     screen.fill(black)
 
     # Moving snowball
     if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_UP:
+            snowball.move(0, -snowball.speed)
+            print('snowball Y-position: %d' % snowball.y)
+        if event.key == pygame.K_DOWN:
+            snowball.move(0, snowball.speed)
+            print('snowball Y-position: %d' % snowball.y)
         if event.key == pygame.K_LEFT:
             snowball.move(-snowball.speed, 0)
             print('snowball position: %d' % snowball.x)
@@ -160,7 +170,7 @@ while done==False:
         if snowflake[1] < -20:
             y = random.randrange(Y_MAX + 20, Y_MAX + 50)
             x = random.randrange(0, X_MAX)
-            r = random.randrange(1, (snowball.r*5)/4)
+            r = random.randrange(1, 8)
             snow_position[index] = [x, y, r]
 
         if collision(snowball.x, snowball.y, snowball.r
@@ -170,7 +180,7 @@ while done==False:
             snowball.r = int(math.sqrt(snowball.area/math.pi))
             y = random.randrange(Y_MAX + 20, Y_MAX + 50)
             x = random.randrange(0, X_MAX)
-            r = random.randrange(1, (snowball.r*5)/4)
+            r = random.randrange(1, 8)
             snow_position[index] = [x, y, r]
 
     # Go ahead and update the screen with what we've drawn.
