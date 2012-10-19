@@ -13,6 +13,13 @@ X_MID = X_MAX // 2
 Y_MAX = 500
 SCREEN_SIZE =[X_MAX, Y_MAX]
 
+# Set the area of the snowstorm
+
+SNOW_X_MAX = X_MAX + 200
+SNOW_X_MIN = -200
+SNOW_Y_MAX = Y_MAX + 300
+SNOW_Y_MIN = -300
+
 #  Classes  #
 
 class Snowflake:
@@ -27,6 +34,9 @@ class Snowflake:
 
     def __str__(self):
         return('(%d, %d)' % (self.x, self.y))
+
+    def position(self):
+        return([self.xPosition, self.yPosition])
 
     def move(self, x, y):
         self.x += x
@@ -54,10 +64,25 @@ class Snowflake:
         else:
             self.speed = 1
 
+class Snowstorm:
+    def __init__(self, numberOfSnowflakes, xMin, xMax, yMin, yMax):
+        self.intensity = numberOfSnowflakes
+        self.xMin, self.xMax = xMin, xMax
+        self.yMin, self.yMax = yMin, yMax
+
+    def snowflakes(self):
+        positions = []
+        for i in range(self.intensity):
+            x = random.randrange(self.xMin, self.xMax)
+            y = random.randrange(self.yMin, self.yMax)
+            r = random.randrange(1, 8)
+            positions.append(Snowflake(x, y, r, 1, 1, white))
+        return(positions)
+
 
 class Wind:
-    def __init__(self, speed):
-        self.speed = speed
+    def __init__(self, xSpeed, ySpeed):
+        self.xSpeed, self.ySpeed = xSpeed, ySpeed
 
     def change_speed(self, amount):
         new_speed = self.speed + amount
@@ -103,16 +128,12 @@ clock=pygame.time.Clock()
 # This is your position
 snowball = Snowflake(X_MID, 20, 10, 1, 1, green)
 
-# Other snowflakes' positions
-snow_position = []
-for i in range(500):
-    x = random.randrange(0, X_MAX)
-    y = random.randrange(0, Y_MAX)
-    r = random.randrange(1, 8)
-    snow_position.append([x, y, r])
+# Snowflake positions
+snowstorm = Snowstorm(1000, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
+snowflake_positions = snowstorm.snowflakes()
 
 # Frames of screen
-frames = 20
+frames = 30
 
 # -------- Main Program Loop -----------
 
@@ -160,28 +181,30 @@ while done==False:
     pygame.draw.circle(screen, snowball.color
                        , [snowball.x, snowball.y] , snowball.r)
 
-    for (index, snowflake) in enumerate(snow_position):
-        pygame.draw.circle(screen, white, snowflake[:-1], snowflake[2])
+    # Draw snowstorm
+    for (index, snowflake) in enumerate(snowflake_positions):
+        pygame.draw.circle(screen, snowflake.color,
+                           [snowflake.x, snowflake.y], snowflake.r)
 
         # Move other snowflakes up one pixel
-        snowflake[1] -= 1
+        snowflake.move(0, -1)
 
         # If snowflake moved off screen
-        if snowflake[1] < -20:
-            y = random.randrange(Y_MAX + 20, Y_MAX + 50)
-            x = random.randrange(0, X_MAX)
+        if snowflake.y < SNOW_Y_MIN:
+            x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
+            y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
             r = random.randrange(1, 8)
-            snow_position[index] = [x, y, r]
+            snowflake.x, snowflake.y, snowflake.r = x, y, r
 
         if collision(snowball.x, snowball.y, snowball.r
-                     , snowflake[0], snowflake[1], snowflake[2]):
-            snowball.area += math.pi * snowflake[2]
+                     , snowflake.x, snowflake.y, snowflake.r):
+            snowball.area += math.pi * snowflake.r
             print('snowball area: %d' % snowball.area)
             snowball.r = int(math.sqrt(snowball.area/math.pi))
-            y = random.randrange(Y_MAX + 20, Y_MAX + 50)
-            x = random.randrange(0, X_MAX)
+            y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
+            x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
             r = random.randrange(1, 8)
-            snow_position[index] = [x, y, r]
+            snowflake.x, snowflake.y, snowflake.r = x, y, r
 
     # Go ahead and update the screen with what we've drawn.
     pygame.display.flip()
