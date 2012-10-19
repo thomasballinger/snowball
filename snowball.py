@@ -20,17 +20,38 @@ SNOW_X_MIN = -200
 SNOW_Y_MAX = Y_MAX + 300
 SNOW_Y_MIN = -300
 
+# Dampening Factors
+X_DAMPEN = 1000
+Y_DAMPEN = 500
+
+# Helper Functions
+
+def change(number, change):
+    """ When given a starting number and a change amount, return the sum
+    as long as the sum change signs of the starting number """
+    if number < 0:
+        if number + change > 0:
+            return(0)
+    elif number + change < 0:
+        return(0)
+    else:
+        return(number + change)
+
+def shift(number, change):
+    number = math.copysign(change(math.fabs(number), change), number)
+    return(int(number))
+
 #  Classes  #
 
 class Snowflake:
-    def __init__(self, xPosition, yPosition, radius, speed, density, color):
+    def __init__(self, xPosition, yPosition, radius, speed, color):
         self.x = xPosition
         self.y = yPosition
         self.r = radius
         self.speed = speed
-        self.density = density
         self.color = color
         self.area = math.pi * self.r**2
+        self.true_area = self.area # Area if never compressed
 
     def __str__(self):
         return('(%d, %d)' % (self.x, self.y))
@@ -41,6 +62,11 @@ class Snowflake:
     def move(self, x, y):
         self.x += x
         self.y += y
+
+    def wind_move(self, xSpeed, ySpeed):
+        " Movement caused by wind "
+        self.x += shift(xSpeed, -self.true_area / X_DAMPEN)
+        self.y += shift(ySpeed, -self.true_area / Y_DAMPEN)
 
     def distance_from(self, position):
         distance = math.sqrt((self.x - position[0])**2
@@ -76,7 +102,7 @@ class Snowstorm:
             x = random.randrange(self.xMin, self.xMax)
             y = random.randrange(self.yMin, self.yMax)
             r = random.randrange(1, 8)
-            positions.append(Snowflake(x, y, r, 1, 1, white))
+            positions.append(Snowflake(x, y, r, 1, white))
         return(positions)
 
 
@@ -84,12 +110,13 @@ class Wind:
     def __init__(self, xSpeed, ySpeed):
         self.xSpeed, self.ySpeed = xSpeed, ySpeed
 
-    def change_speed(self, amount):
-        new_speed = self.speed + amount
-        if fabs(new_speed) <= WIND_MAX:
-            self.speed += amount
-        else:
-            self.speed = math.copysign(WIND_MAX, new_speed)
+    def change_speed(self, xChange, yChange):
+        self.xSpeed += xChange
+        self.ySpeed += yChange
+        if math.fabs(self.xSpeed) >= WIND_MAX:
+            if math.fabs(self.ySpeed) >= WIND_MAX:
+                self.ySpeed = math.copysign(WIND_MAX, self.ySpeed)
+            self.xSpeed = math.copysign(WIND_MAX, self.xSpeed)
 
     #def effect_on(self, obj):
     #    return(wind.speed dampens by obj.r // 5?
@@ -126,7 +153,7 @@ done=False
 clock=pygame.time.Clock()
 
 # This is your position
-snowball = Snowflake(X_MID, 20, 10, 1, 1, green)
+snowball = Snowflake(X_MID, 20, 10, 1, green)
 
 # Snowflake positions
 snowstorm = Snowstorm(1000, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
@@ -196,11 +223,18 @@ while done==False:
             r = random.randrange(1, 8)
             snowflake.x, snowflake.y, snowflake.r = x, y, r
 
+        # If snowball and snowflake collide
         if collision(snowball.x, snowball.y, snowball.r
                      , snowflake.x, snowflake.y, snowflake.r):
-            snowball.area += math.pi * snowflake.r
+
+            # Snowball absorbs snowflake
+            snowball.area += math.pi * snowflake.r**2
+            snowball.true_area += math.pi * snowflake.r**2
             print('snowball area: %d' % snowball.area)
+            print('snowball true_area: %d' % snowball.true_area)
             snowball.r = int(math.sqrt(snowball.area/math.pi))
+            
+            # Then reset snowflake
             y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
             x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
             r = random.randrange(1, 8)
