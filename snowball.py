@@ -5,6 +5,8 @@ import random
 #  Global Parameters  #
 
 WIND_MAX = 10
+X_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
+Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 
 # Set the width and height of the screen [width,height]
 
@@ -118,6 +120,16 @@ class Wind:
                 self.ySpeed = math.copysign(WIND_MAX, self.ySpeed)
             self.xSpeed = math.copysign(WIND_MAX, self.xSpeed)
 
+    def x_change(self, transition):
+        "Uniformly draw the wind speed change in the x axis"
+        i = random.randrange(len(transition))
+        return(transition[i])
+
+    def y_change(self, transition):
+        "Uniformly draw the wind speed change in the y axis"
+        i = random.randrange(len(transition))
+        return(transition[i])
+
     #def effect_on(self, obj):
     #    return(wind.speed dampens by obj.r // 5?
 
@@ -132,6 +144,7 @@ def collision(xOne, yOne, rOne, xTwo, yTwo, rTwo):
         return(True)
     else:
         return(False)
+
 
 # Define some colors
 black    = (   0,   0,   0)
@@ -158,6 +171,9 @@ snowball = Snowflake(X_MID, 20, 10, 1, green)
 # Snowflake positions
 snowstorm = Snowstorm(1000, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
 snowflake_positions = snowstorm.snowflakes()
+
+# Wind
+wind = Wind(0,0)
 
 # Frames of screen
 frames = 30
@@ -215,6 +231,9 @@ while done==False:
 
         # Move other snowflakes up one pixel
         snowflake.move(0, -1)
+
+        # Apply wind
+        snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
         # If snowflake moved off screen
         if snowflake.y < SNOW_Y_MIN:
