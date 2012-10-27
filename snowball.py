@@ -28,20 +28,25 @@ Y_DAMPEN = 500
 
 # Helper Functions
 
-def change(number, change):
-    """ When given a starting number and a change amount, return the sum
-    as long as the sum change signs of the starting number """
-    if number < 0:
-        if number + change > 0:
-            return(0)
-    elif number + change < 0:
+def sticky_sum(initial, shift):
+    """Given an initial number and a shift to add to it, return the zero
+    sticky sum."""
+    if initial < 0:
+        result = min(0, initial + shift)
+        return(result)
+    elif initial > 0:
+        result = max(0, initial + shift)
+        return(result)
+    else: # initial == 0
         return(0)
-    else:
-        return(number + change)
 
-def shift(number, change):
-    number = math.copysign(change(math.fabs(number), change), number)
-    return(int(number))
+def dampen(initial, dampenAmount):
+    """ Given a initial number and a dampening amount, return the dampened
+    result as an int."""
+    initial_sign = math.copysign(initial, 1)
+    dampenAmount = math.copysign(-initial_sign, dampenAmount)
+    result = sticky_sum(initial, dampenAmount)
+    return(int(result))
 
 #  Classes  #
 
@@ -62,21 +67,24 @@ class Snowflake:
         return([self.xPosition, self.yPosition])
 
     def move(self, x, y):
+        """Move x and y position of Snowflake."""
         self.x += x
         self.y += y
 
     def wind_move(self, xSpeed, ySpeed):
-        " Movement caused by wind "
-        self.x += shift(xSpeed, -self.true_area / X_DAMPEN)
-        self.y += shift(ySpeed, -self.true_area / Y_DAMPEN)
+        """Movement to Snowflake caused by wind."""
+        self.x += dampen(xSpeed, self.true_area / X_DAMPEN)
+        self.y += dampen(ySpeed, self.true_area / Y_DAMPEN)
 
     def distance_from(self, position):
+        """Distance from Snowflake to another [x, y] position"""
         distance = math.sqrt((self.x - position[0])**2
                              + (self.y - position[1])**2)
         return(distance)
 
     def resize(self, amount):
-        if (self.r + amount) > 0:
+        """Given amount to change radius, return radius sticky at 1."""
+        if (self.r + amount) > 1:
             self.r + amount
         else:
             self.r == 1 # Cannot resize to nothing
