@@ -52,6 +52,17 @@ def dampen(initial, dampenAmount):
 
 #  Classes  #
 
+class Game:
+    def __init__(self, state):
+        self.state = state
+
+    def change_to(self, state):
+        if state == 'You Lose':
+            pass
+        elif state == 'You Win':
+            pass
+
+
 class Snowflake:
     def __init__(self, xPosition, yPosition, radius, speed, color):
         self.x = xPosition
@@ -293,8 +304,8 @@ while done==False:
             print('snowball area: %d' % snowball.area)
             print('snowball true_area: %d' % snowball.true_area)
             snowball.r = int(math.sqrt(snowball.area/math.pi))
-            
-            # Then reset snowflake
+
+            # Then, reset snowflake
             y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
             x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
             r = random.randrange(1, 8)
