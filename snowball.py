@@ -8,6 +8,7 @@ WIND_MAX = 10
 X_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 MINIMUM_SNOWBALL_RADIUS = 3
+MAX_SNOWBALL_SPEED = 20
 
 # Set the width and height of the screen [width,height]
 
@@ -236,6 +237,9 @@ while done==False:
 #        if event.key == pygame.K_RIGHT:
 #            snowball.move(snowball.speed, 0)
 #            print('snowball position: %d' % snowball.x)
+
+    # Snowball Speed
+    snowball.speed = max(1, int(snowball.true_area // snowball.area))
 
     # Moving snowball
     keys_pressed = pygame.key.get_pressed()
