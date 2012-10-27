@@ -7,6 +7,7 @@ import random
 WIND_MAX = 10
 X_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
+MINIMUM_SNOWBALL_RADIUS = 3
 
 # Set the width and height of the screen [width,height]
 
@@ -99,6 +100,14 @@ class Snowflake:
             self.speed += amount
         else:
             self.speed = 1
+
+    def compress(self, amount):
+        """Given an amount to compress Snowflake, return compressed area."""
+        minimum_area = MINIMUM_SNOWBALL_RADIUS**2 * math.pi
+        result = max(minimum_area, self.area - amount)
+        resulting_radius = math.sqrt(result/math.pi)
+        self.r = int(resulting_radius)
+        self.area = int(result)
 
 class Snowstorm:
     def __init__(self, numberOfSnowflakes, xMin, xMax, yMin, yMax):
@@ -214,19 +223,39 @@ while done==False:
     screen.fill(black)
 
     # Moving snowball
-    if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_UP:
-            snowball.move(0, -snowball.speed)
-            print('snowball Y-position: %d' % snowball.y)
-        if event.key == pygame.K_DOWN:
-            snowball.move(0, snowball.speed)
-            print('snowball Y-position: %d' % snowball.y)
-        if event.key == pygame.K_LEFT:
-            snowball.move(-snowball.speed, 0)
-            print('snowball position: %d' % snowball.x)
-        if event.key == pygame.K_RIGHT:
-            snowball.move(snowball.speed, 0)
-            print('snowball position: %d' % snowball.x)
+#    if event.type == pygame.KEYDOWN:
+#        if event.key == pygame.K_UP:
+#            snowball.move(0, -snowball.speed)
+#            print('snowball Y-position: %d' % snowball.y)
+#        if event.key == pygame.K_DOWN:
+#            snowball.move(0, snowball.speed)
+#            print('snowball Y-position: %d' % snowball.y)
+#        if event.key == pygame.K_LEFT:
+#            snowball.move(-snowball.speed, 0)
+#            print('snowball position: %d' % snowball.x)
+#        if event.key == pygame.K_RIGHT:
+#            snowball.move(snowball.speed, 0)
+#            print('snowball position: %d' % snowball.x)
+
+    # Moving snowball
+    keys_pressed = pygame.key.get_pressed()
+    if keys_pressed[pygame.K_UP]:
+        snowball.move(0, -snowball.speed)
+        print('snowball Y-position: %d' % snowball.y)
+    if keys_pressed[pygame.K_DOWN]:
+        snowball.move(0, snowball.speed)
+        print('snowball Y-position: %d' % snowball.y)
+    if keys_pressed[pygame.K_LEFT]:
+        snowball.move(-snowball.speed, 0)
+        print('snowball X-position: %d' % snowball.x)
+    if keys_pressed[pygame.K_RIGHT]:
+        snowball.move(snowball.speed, 0)
+        print('snowball X-position: %d' % snowball.x)
+    if keys_pressed[pygame.K_SPACE]:
+        snowball.compress(snowball.area/100)
+        print('snowball area: %d' % snowball.area)
+        print('snowball true area: %d' % snowball.true_area)
+        print('snowball radius: %d' % snowball.r)
 
     # Draw snowball
     pygame.draw.circle(screen, snowball.color
