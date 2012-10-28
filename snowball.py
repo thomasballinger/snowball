@@ -206,7 +206,7 @@ done=False
 clock=pygame.time.Clock()
 
 # This is your position
-snowball = Snowflake(X_MID, 20, 10, 1, green)
+snowball = Snowflake(X_MID, 20, 2, 1, green)
 
 # Snowflake positions
 snowstorm = Snowstorm(1000, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
@@ -217,6 +217,12 @@ wind = Wind(0,0)
 
 # Frames of screen
 frames = 30
+
+# Instantiate font
+font = pygame.font.Font(None, 100)
+
+state = 'Start'
+game = Game(state)
 
 # -------- Main Program Loop -----------
 
@@ -240,7 +246,8 @@ while done==False:
     screen.fill(black)
 
     # Snowball Speed
-    snowball.speed = max(1, int(snowball.true_area // (2 * snowball.area)))
+    limit = min(MAX_SNOWBALL_SPEED, int(snowball.true_area // (2 * snowball.area)))
+    snowball.speed = max(1, limit)
 
     # Moving snowball
     keys_pressed = pygame.key.get_pressed()
@@ -288,27 +295,38 @@ while done==False:
         if collision(snowball.x, snowball.y, snowball.r
                      , snowflake.x, snowflake.y, snowflake.r):
 
-            # Snowball absorbs snowflake
-            snowball.area += math.pi * snowflake.r**2
-            snowball.true_area += math.pi * snowflake.r**2
-            print('snowball area: %d' % snowball.area)
-            print('snowball true_area: %d' % snowball.true_area)
-            snowball.r = int(math.sqrt(snowball.area/math.pi))
+            if snowflake.area >= snowball.area:
+                game.state = 'You Lose'
+                # something else happens here
 
-            # Then, reset snowflake
-            y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
-            x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
-            r = random.randrange(1, 8)
-            snowflake.x, snowflake.y, snowflake.r = x, y, r
+            else:
+                # Snowball absorbs snowflake
+                snowball.area += math.pi * snowflake.r**2
+                snowball.true_area += math.pi * snowflake.r**2
+                print('snowball area: %d' % snowball.area)
+                print('snowball true_area: %d' % snowball.true_area)
+                snowball.r = int(math.sqrt(snowball.area/math.pi))
 
-    # Go ahead and update the screen with what we've drawn.
+                # Then, reset snowflake
+                y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
+                x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
+                r = random.randrange(1, 8)
+                snowflake.x, snowflake.y, snowflake.r = x, y, r
+
+    # Check game state
+    if game.state == 'You Lose':
+
+        text = font.render(game.state, True, red)
+        text_rectangle = text.get_rect()
+        text_rectangle.centerx = screen.get_rect().centerx
+        text_rectangle.centery = screen.get_rect().centery
+        screen.blit(text, text_rectangle)
+
+    # Update the screen with what we've drawn.
     pygame.display.flip()
 
     # speed
     clock.tick(frames)
 
-# Close the window and quit.
-# If you forget this line, the program will 'hang'
-# on exit if running from IDLE.
 pygame.quit ()
 
