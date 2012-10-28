@@ -1,10 +1,11 @@
 import math
 import pickle
 import pygame
+import pygame.gfxdraw
 import random
 import socket
 import sys
-import pygame.gfxdraw
+import weakref
 
 # Server stuff
 
@@ -62,6 +63,29 @@ def dampen(initial, dampenAmount):
     return(int(result))
 
 #  Classes  #
+
+class Event:
+    """Superclass for any event that needs to be sent to the Event_Manager."""
+    def __init__(self):
+        self.name = "Event"
+
+class Event_Manager:
+    """Coordinates communication between Model, View, and Controller."""
+    def __init__(self):
+        self.listener = weakref.WeakKeyDictionary()
+
+    def register_listener(self, listener):
+        self.listeners[listener] = 1
+
+    def unregister_listener(self, listener):
+        if listener in self.listeners.keys():
+            del self.listeners[listener]
+    
+    def post(self, event):
+        """Post a new event broadcasted to listeners"""
+        for listener in self.listeners.keys():
+            # NOTE: if listener unregistered then it will be gone already
+            listener.notify(event)
 
 class Game:
     def __init__(self, state):
