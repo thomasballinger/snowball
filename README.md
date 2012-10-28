@@ -4,7 +4,7 @@ Snowball is a "dog eat dog" game.
 
 Controls
 --------
-ARROWS: Movement
+ARROWS: Movement\n
 SPACE : Compress snowball for more speed
 
 Release
