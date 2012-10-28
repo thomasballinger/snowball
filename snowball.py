@@ -65,11 +65,11 @@ def dampen(initial, dampenAmount):
 #  Classes  #
 
 class Event:
-    """Superclass for any event that needs to be sent to the Event_Manager."""
+    """Superclass for any event that needs to be sent to the EventManager."""
     def __init__(self):
         self.name = "Event"
 
-class Event_Manager:
+class EventManager:
     """Coordinates communication between Model, View, and Controller."""
     def __init__(self):
         self.listener = weakref.WeakKeyDictionary()
@@ -86,6 +86,84 @@ class Event_Manager:
         for listener in self.listeners.keys():
             # NOTE: if listener unregistered then it will be gone already
             listener.notify(event)
+
+
+class StartEvent:
+    def __init__(self):
+        pass
+
+
+class TickEvent:
+    def __init__(self):
+        pass
+
+
+class QuitEvent:
+    def __init__(self):
+        pass
+
+
+class KeyboardController:
+    def __init__(self):
+        pass
+
+    def notify(self, event):
+        if isinstance(event, TickEvent):
+
+            keys_pressed = pygame.key.get_pressed()
+
+            if keys_pressed[pygame.K_UP]:
+                snowball.move(0, -snowball.speed)
+
+            if keys_pressed[pygame.K_DOWN]:
+                snowball.move(0, snowball.speed)
+
+            if keys_pressed[pygame.K_LEFT]:
+                snowball.move(-snowball.speed, 0)
+
+            if keys_pressed[pygame.K_RIGHT]:
+                snowball.move(snowball.speed, 0)
+
+            if keys_pressed[pygame.K_SPACE]:
+                snowball.compress(snowball.area/100)
+                print('snowball area: %d' % snowball.area)
+                print('snowball true area: %d' % snowball.true_area)
+                print('snowball radius: %d' % snowball.r)
+
+
+class StateController:
+    def __init__(self):
+        pass
+
+    def run(self):
+        while self.keep_going:
+            event = TickEvent()
+            self.event_manager.post(event)
+
+    def notify(self, event):
+        if isinstance(event, QuitEvent):
+            self.keep_going = False
+
+class View:
+    def __init__(self):
+        pass
+
+    def notify(self, event):
+        if isinstance(event, TickEvent):
+            # Draw snowball
+            pygame.gfxdraw.aacircle(screen, snowball.x, snowball.y, snowball.r, 
+                                    snowball.color)
+
+            # Draw snowstorm
+            for (index, snowflake) in enumerate(snowflake_positions):
+                pygame.draw.circle(screen, snowflake.color,
+                                   [snowflake.x, snowflake.y], snowflake.r)
+
+            # Move other snowflakes up one pixel
+            snowflake.move(0, -1)
+
+        if isinstance(event, QuitEvent):
+
 
 class Game:
     def __init__(self, state):
@@ -242,6 +320,7 @@ wind = Wind(0,0)
 
 # Frames of screen
 frames = 30
+pps = 1.0/frames
 
 # Instantiate font
 font = pygame.font.Font(None, 100)
