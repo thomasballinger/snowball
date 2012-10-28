@@ -1,6 +1,17 @@
 import math
+import pickle
 import pygame
 import random
+import socket
+import sys
+import pygame.gfxdraw
+
+# Server stuff
+
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+MAX = 65535
+PORT = 1060
 
 #  Global Parameters  #
 
@@ -225,32 +236,11 @@ while done==False:
         if event.key == pygame.K_d:
             frames -= 1
             print('frames: %d' % frames)
-#        if event.key == pygame.K_UP:
-#            snowball.change_speed(1)
-#            print('snowball speed: %d' % snowball.speed)
-#        if event.key == pygame.K_DOWN:
-#            snowball.change_speed(-1)
-#            print('snowball speed: %d' % snowball.speed)
 
     screen.fill(black)
 
-    # Moving snowball
-#    if event.type == pygame.KEYDOWN:
-#        if event.key == pygame.K_UP:
-#            snowball.move(0, -snowball.speed)
-#            print('snowball Y-position: %d' % snowball.y)
-#        if event.key == pygame.K_DOWN:
-#            snowball.move(0, snowball.speed)
-#            print('snowball Y-position: %d' % snowball.y)
-#        if event.key == pygame.K_LEFT:
-#            snowball.move(-snowball.speed, 0)
-#            print('snowball position: %d' % snowball.x)
-#        if event.key == pygame.K_RIGHT:
-#            snowball.move(snowball.speed, 0)
-#            print('snowball position: %d' % snowball.x)
-
     # Snowball Speed
-    snowball.speed = max(1, int(snowball.true_area // snowball.area))
+    snowball.speed = max(1, int(snowball.true_area // (2 * snowball.area)))
 
     # Moving snowball
     keys_pressed = pygame.key.get_pressed()
@@ -273,8 +263,8 @@ while done==False:
         print('snowball radius: %d' % snowball.r)
 
     # Draw snowball
-    pygame.draw.circle(screen, snowball.color
-                       , [snowball.x, snowball.y] , snowball.r)
+    pygame.gfxdraw.aacircle(screen, snowball.x, snowball.y, snowball.r, 
+                            snowball.color)
 
     # Draw snowstorm
     for (index, snowflake) in enumerate(snowflake_positions):
