@@ -143,7 +143,7 @@ class Snowstorm:
         for i in range(self.intensity):
             x = random.randrange(self.xMin, self.xMax)
             y = random.randrange(self.yMin, self.yMax)
-            r = random.randrange(1, 8)
+            r = random.randrange(1, 10)
             positions.append(Snowflake(x, y, r, 1, white))
         return(positions)
 
@@ -191,6 +191,7 @@ black    = (   0,   0,   0)
 white    = ( 255, 255, 255)
 green    = (   0, 255,   0)
 red      = ( 255,   0,   0)
+blue     = (   0,   0, 255)
 
 pygame.init()
 
