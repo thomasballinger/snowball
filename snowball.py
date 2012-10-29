@@ -110,6 +110,19 @@ class KeyboardController:
     def notify(self, event):
         if isinstance(event, TickEvent):
 
+            # Admin stuff
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                print('done')
+                event = QuitEvent()
+            if event.key == pygame.K_u:
+                frames += 1
+                print('frames: %d' % frames)
+            if event.key == pygame.K_d:
+                frames -= 1
+                print('frames: %d' % frames)
+
+            # Game Controls
             keys_pressed = pygame.key.get_pressed()
 
             if keys_pressed[pygame.K_UP]:
@@ -163,6 +176,15 @@ class View:
             snowflake.move(0, -1)
 
         if isinstance(event, QuitEvent):
+            
+            # Rendering Game Over
+            text = font.render('You Lose', True, red)
+            text_rectangle = text.get_rect()
+            text_rectangle.centerx = screen.get_rect().centerx
+            text_rectangle.centery = screen.get_rect().centery
+            screen.blit(text, text_rectangle)
+
+
 
 
 class Game:
@@ -320,7 +342,7 @@ wind = Wind(0,0)
 
 # Frames of screen
 frames = 30
-pps = 1.0/frames
+pps = 1.0/frames # pixels per second
 
 # Instantiate font
 font = pygame.font.Font(None, 100)
