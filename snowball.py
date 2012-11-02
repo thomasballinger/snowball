@@ -112,6 +112,8 @@ class GameEngineController:
 
         quit = None
 
+        player = self.snowballs[0]
+
         if isinstance(event, TickEvent):
 
             # Quitting
@@ -121,7 +123,7 @@ class GameEngineController:
 
             keys_pressed = pygame.key.get_pressed()
 
-            if keys_pressed[pygame.ESCAPE]:
+            if keys_pressed[pygame.K_ESCAPE]:
                 quit = QuitEvent()
 
             if quit:
@@ -139,22 +141,22 @@ class GameEngineController:
 
             # Keyboard Game Controls
             if keys_pressed[pygame.K_UP]:
-                snowball.move(0, -snowball.speed)
+                player.move(0, -player.speed)
 
             if keys_pressed[pygame.K_DOWN]:
-                snowball.move(0, snowball.speed)
+                player.move(0, player.speed)
 
             if keys_pressed[pygame.K_LEFT]:
-                snowball.move(-snowball.speed, 0)
+                player.move(-player.speed, 0)
 
             if keys_pressed[pygame.K_RIGHT]:
-                snowball.move(snowball.speed, 0)
+                player.move(player.speed, 0)
 
             if keys_pressed[pygame.K_SPACE]:
-                snowball.compress(snowball.area/100)
-                print('snowball area: %d' % snowball.area)
-                print('snowball true area: %d' % snowball.true_area)
-                print('snowball radius: %d' % snowball.r)
+                player.compress(player.area/100)
+                print('snowball area: %d' % player.area)
+                print('snowball true area: %d' % player.true_area)
+                print('snowball radius: %d' % player.r)
 
             # Game Logic
 
@@ -204,6 +206,15 @@ class GameEngineController:
                             snowball.true_area += other.true_area
                             snowball.r = int(math.sqrt(snowball.area/math.pi))
 
+            # Known bugs:
+            # Not yet written for multiplayer, just laid foundation/frameworks
+            # You lose screen
+            # Snowball has to be "eliminated" upon game over, currently just not drawn
+
+
+
+
+
 
 
 
@@ -220,13 +231,18 @@ class StateController:
             # TickEvent starts events for the general game
             event = TickEvent()
             self.event_manager.post(event)
+            print('frame')
 
     def notify(self, event):
         if isinstance(event, QuitEvent):
             self.keep_going = False
 
 class View:
-    def __init__(self):
+    def __init__(self, eventManager, snowflakes, snowballs):
+        self.event_manager = eventManager
+        self.event_manager.register_listener(self)
+        self.snowflakes = snowflakes
+        self.snowballs = snowballs
 
         pygame.init()
         self.window = pygame.display.set_mode(SCREEN_SIZE)
@@ -243,7 +259,7 @@ class View:
     def notify(self, event):
         if isinstance(event, TickEvent):
 
-            for (index, snowflake) in enumerate(snowflake_positions):
+            for snowflake in self.snowflakes:
                 snowflake.draw(self.window)            
 
             if event.game_over:
@@ -253,7 +269,7 @@ class View:
                 text_rectangle.centery = self.window.get_rect().centery
                 self.window.blit(text, text_rectangle)
             else:
-                snowball.draw(self.window, antialias=True)
+                self.snowballs[0].draw(self.window, antialias=True)
 
             pygame.display.flip()
 
@@ -336,7 +352,7 @@ class Snowflake:
         """Draw snowflake on screen."""
         if antialias:
             pygame.gfxdraw.aacircle(screen, self.x, self.y, self.r, self.color)
-        pygame.draw.cirlce(screen, self.color, [self.x, self.y], self.r)
+        pygame.draw.circle(screen, self.color, [self.x, self.y], self.r)
 
 class Snowstorm:
     def __init__(self, numberOfSnowflakes, xMin, xMax, yMin, yMax):
@@ -344,7 +360,7 @@ class Snowstorm:
         self.xMin, self.xMax = xMin, xMax
         self.yMin, self.yMax = yMin, yMax
 
-    def attributes(self, typeOfSnow, playerCount=None, playerRadius=None, 
+    def attributes(self, typeOfSnow, playerRadius=None, 
                   playerColors=None):
         """Return list of Snowflakes with given attributes."""
         attrs = []
@@ -358,13 +374,11 @@ class Snowstorm:
             return(attrs)
 
         if typeOfSnow == 'Snowballs':
-            player = 0
             for i in range(self.intensity):
-                x = self.xMax / playerCount
-                y = self.yMax / playerCount
+                x = (self.xMax * (i + 1)) / (self.intensity + 1)
+                y = (self.yMax * (i + 1)) / (self.intensity + 1)
                 r = playerRadius
-                attrs.append(Snowflake(x, y, r, 1, playerColors[player]))
-                player += 1
+                attrs.append(Snowflake(x, y, r, 1, playerColors[i]))
             return(attrs)
 
 
@@ -421,11 +435,11 @@ clock=pygame.time.Clock()
 
 # Snowballs
 balls = Snowstorm(1, 0, X_MAX, 0, Y_MAX)
-snowballs = balls.attributes()
+snowballs = balls.attributes('Snowballs', MINIMUM_SNOWBALL_RADIUS, [green])
 
 # Snowflakes
 flakes = Snowstorm(1000, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
-snowflakes = flakes.attributes()
+snowflakes = flakes.attributes('Snowflakes')
 
 # Wind
 wind = Wind(0,0)
@@ -433,9 +447,6 @@ wind = Wind(0,0)
 # Frames of screen
 frames = 30
 pps = 1.0/frames # pixels per second
-
-# Instantiate font
-font = pygame.font.Font(None, 100)
 
 state = 'Start'
 game = Game(state)
@@ -448,8 +459,9 @@ def main():
 
     # Instantiate view and controllers, as well as registering them
     # as listeners in event_manager
-    game_engine = GameEngineController(event_manager)
-    view = View(event_manager)
+    game_engine = GameEngineController(event_manager, snowballs, snowflakes,
+                                       wind)
+    view = View(event_manager, snowballs, snowflakes)
     state = StateController(event_manager) 
 
     state.run()
