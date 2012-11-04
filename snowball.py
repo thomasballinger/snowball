@@ -110,6 +110,9 @@ class GameEngineController:
 
     def notify(self, event):
 
+        global snowflakes
+        global snowballs
+
         quit = None
 
         player = self.snowballs[0]
@@ -161,39 +164,41 @@ class GameEngineController:
             # Game Logic
 
             # Move snowflakes
-            for snowflake in self.snowflakes:
+            for snowflake in snowflakes:
                 snowflake.move(0, -1)
                 snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
             # Collisions
-            for snowflake in self.snowflakes:
-                for other in self.snowflakes:
-                    if snowflake.x == other.x and snowflake.y == other.y:
-                        continue
-                    if collision(snowflake.x, snowflake.y, snowflake.r,
-                                 other.x, other.y, other.r):
-                        if snowflake.area >= other.area:
-                            snowflake.area += math.pi * snowflake.r**2
-                            snowflake.true_area += math.pi * snowflake.r**2
-                            snowflake.r = int(math.sqrt(snowflake.area/math.pi))
+#            for snowflake in snowflakes:
+#                for other in snowflakes:
+#                    if snowflake.x == other.x and snowflake.y == other.y:
+#                        continue
+#                    if collision(snowflake.x, snowflake.y, snowflake.r,
+#                                 other.x, other.y, other.r):
+#                        if snowflake.area >= other.area:
+#                            snowflake.area += math.pi * snowflake.r**2
+#                            snowflake.true_area += math.pi * snowflake.r**2
+#                            snowflake.r = int(math.sqrt(snowflake.area/math.pi))
+#
+#                            x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
+#                            y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
+#                            r = random.randrange(1, 8)
+#                            snowflake.x, snowflake.y, snowflake.r = x, y, r
 
-                            x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
-                            y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
-                            r = random.randrange(1, 8)
-                            snowflake.x, snowflake.y, snowflake.r = x, y, r
+            for snowball in snowballs:
+                for snowflake in snowflakes:
+                    if collision(snowball.x, snowball.y, snowball.r,
+                                 snowflake.x, snowflake.y, snowflake.r):
+                        if snowflake.area >= snowball.area:
+                            self.event_manager.post(TickEvent(game_over=True))
+                            return
+                        else:
+                            snowball.area += snowflake.area
+                            snowball.true_area += snowflake.true_area
+                            snowball.r = int(math.sqrt(snowball.area/math.pi))
+                            snowflake.x, snowflake.y, snowflake.r = reset()
 
-            for snowball in self.snowballs:
-                if collision(snowball.x, snowball.y, snowball.r,
-                             snowflake.x, snowflake.y, snowflake.r):
-                    if snowflake.area >= snowball.area:
-                        self.event_manager.post(TickEvent(game_over=True))
-                        return
-                    else:
-                        snowball.area += snowflake.area
-                        snowball.true_area += snowflake.true_area
-                        snowball.r = int(math.sqrt(snowball.area/math.pi))
-
-                for other in self.snowballs:
+                for other in snowballs:
                     if snowball.x == other.x and snowball.y == other.y:
                         continue
                     if collision(snowball.x, snowball.y, snowball.r,
@@ -205,6 +210,10 @@ class GameEngineController:
                             snowball.area += other.area
                             snowball.true_area += other.true_area
                             snowball.r = int(math.sqrt(snowball.area/math.pi))
+
+            for snowflake in snowflakes:
+                if snowflake.y < SNOW_Y_MIN:
+                    snowflake.x, snowflake.y, snowflake.r = reset()
 
             # Known bugs:
             # Not yet written for multiplayer, just laid foundation/frameworks
@@ -241,8 +250,6 @@ class View:
     def __init__(self, eventManager, snowflakes, snowballs):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
-        self.snowflakes = snowflakes
-        self.snowballs = snowballs
 
         pygame.init()
         self.window = pygame.display.set_mode(SCREEN_SIZE)
@@ -257,9 +264,15 @@ class View:
 
 
     def notify(self, event):
+
+        global snowflakes
+        global snowballs
+
+        self.window.fill(black)
+        
         if isinstance(event, TickEvent):
 
-            for snowflake in self.snowflakes:
+            for snowflake in snowflakes:
                 snowflake.draw(self.window)            
 
             if event.game_over:
@@ -269,7 +282,7 @@ class View:
                 text_rectangle.centery = self.window.get_rect().centery
                 self.window.blit(text, text_rectangle)
             else:
-                self.snowballs[0].draw(self.window, antialias=True)
+                snowballs[0].draw(self.window, antialias=True)
 
             pygame.display.flip()
 
@@ -277,6 +290,45 @@ class View:
 
         if isinstance(event, QuitEvent):
             pass
+
+
+class Quadtree:
+    def __init__(self, snowObjects, maxLevels=8, bounds=None):
+
+        # Subregions start empty
+        self.nw = self.ne = self.se = self.sw = None
+
+        maxLevels -= 1
+        if maxLevels = 0:
+            return(snowObjects)
+
+        if bounds:
+            top, right, bottom, left = bounds
+        else:
+            top = min(snowObject.top for snowObject in snowObjects)
+            right = max(snowObject.right for snowObject in snowObjects)
+            bottom = max(snowObject.bottom for snowObject in snowObjects)
+            left = min(snowObject.left for snowObject in snowObjects)
+        center_x = (left + right) / 2
+        center_y = (top + bottom) / 2
+
+        self.objects = []
+        self.nw_objects = []
+        self.ne_objects = []
+        self.se_objects = []
+        self.sw_objects = []
+
+        for obj in snowObjects:
+            if obj.top <= center_y and obj.left <= center_x:
+                self.nw_objects.append(obj)
+            if obj.top <= center_y and obj.right >= center_x:
+                self.ne_objects.append(obj)
+            if obj.bottom >= center_y and obj.right >= center_x:
+                self.se_objects.append(obj)
+            if obj.bottom >= center_y and obj.left <= center_x:
+                self.sw_objects.append(obj)
+
+
 
 
 class Game:
@@ -305,6 +357,18 @@ class Snowflake:
 
     def position(self):
         return([self.xPosition, self.yPosition])
+
+    def top(self):
+        return(self.y - self.r) 
+    
+    def bottom(self):
+        return(self.y + self.r)
+
+    def left(self):
+        return(self.x - self.r)
+
+    def right(self):
+        return(self.x + self.r)
 
     def move(self, x, y):
         """Move x and y position of Snowflake."""
@@ -419,6 +483,12 @@ def collision(xOne, yOne, rOne, xTwo, yTwo, rTwo):
     else:
         return(False)
 
+def reset():
+    """Return a tuple of x, y, r values to reset a snowflake."""
+    x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
+    y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
+    r = random.randrange(1, 8)
+    return((x, y, r))
 
 # Define some colors
 black    = (   0,   0,   0)
@@ -465,3 +535,5 @@ def main():
     state = StateController(event_manager) 
 
     state.run()
+
+main()
