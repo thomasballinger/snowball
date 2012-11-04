@@ -15,6 +15,7 @@ terrorizes all the other snowflake denizens. That's about it though.
 
 TODO
 ----
+* Quadtree for collision detection
 * Implement wind
 * Snowflakes need to have the ability to engulf each other too.
 * Add another snowball player :)
