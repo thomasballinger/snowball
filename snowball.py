@@ -268,7 +268,7 @@ class View:
         if isinstance(event, TickEvent):
 
             for snowflake in self.snowflakes:
-                snowflake.draw(self.window)            
+                snowflake.draw(self.window, antialias=True)            
 
             if event.game_over:
                 text = self.font.render('You Lose', True, red)
