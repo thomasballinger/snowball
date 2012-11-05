@@ -109,67 +109,8 @@ class Sky:
         self.snowflakes = snowflakes
         self.wind = wind
 
-
-class GameEngineController:
-    def __init__(self, eventManager, snowballs, snowflakes, wind):
-        self.event_manager = eventManager
-        self.event_manager.register_listener(self)
-        self.snowballs = snowballs
-        self.snowflakes = snowflakes
-        self.wind = wind
-
     def notify(self, event):
-
-        quit = None
-
-        player = self.snowballs[0]
-
         if isinstance(event, TickEvent):
-
-            # Quitting
-            for game_event in pygame.event.get():
-                if game_event.type == pygame.QUIT:
-                    quit = QuitEvent()
-
-            keys_pressed = pygame.key.get_pressed()
-
-            if keys_pressed[pygame.K_ESCAPE]:
-                quit = QuitEvent()
-
-            if quit:
-                self.event_manager.post(quit)
-                return
-
-            # Keyboard Admin Controls
-            if keys_pressed[pygame.K_u]:
-                frames += 1
-                print('frames: %d' % frames)
-
-            if keys_pressed[pygame.K_d]:
-                frames -= 1
-                print('frames: %d' % frames)
-
-            # Keyboard Game Controls
-            if keys_pressed[pygame.K_UP]:
-                player.move(0, -player.speed)
-
-            if keys_pressed[pygame.K_DOWN]:
-                player.move(0, player.speed)
-
-            if keys_pressed[pygame.K_LEFT]:
-                player.move(-player.speed, 0)
-
-            if keys_pressed[pygame.K_RIGHT]:
-                player.move(player.speed, 0)
-
-            if keys_pressed[pygame.K_SPACE]:
-                player.compress(player.area/100)
-                print('snowball area: %d' % player.area)
-                print('snowball true area: %d' % player.true_area)
-                print('snowball radius: %d' % player.r)
-
-            # Game Logic
-
             # Move snowflakes
             for snowflake in self.snowflakes:
                 snowflake.move(0, -1)
@@ -228,11 +169,63 @@ class GameEngineController:
 
 
 
+class KeyboardController:
+    def __init__(self, eventManager, snowballs, snowflakes, wind):
+        self.event_manager = eventManager
+        self.event_manager.register_listener(self)
+        self.snowballs = snowballs
+        self.snowflakes = snowflakes
+        self.wind = wind
 
+    def notify(self, event):
 
+        quit = None
 
+        player = self.snowballs[0]
 
+        if isinstance(event, TickEvent):
 
+            # Quitting
+            for game_event in pygame.event.get():
+                if game_event.type == pygame.QUIT:
+                    quit = QuitEvent()
+
+            keys_pressed = pygame.key.get_pressed()
+
+            if keys_pressed[pygame.K_ESCAPE]:
+                quit = QuitEvent()
+
+            if quit:
+                self.event_manager.post(quit)
+                return
+
+            # Keyboard Admin Controls
+            if keys_pressed[pygame.K_u]:
+                frames += 1
+                print('frames: %d' % frames)
+
+            if keys_pressed[pygame.K_d]:
+                frames -= 1
+                print('frames: %d' % frames)
+
+            # Keyboard Game Controls
+            if keys_pressed[pygame.K_UP]:
+                player.move(0, -player.speed)
+
+            if keys_pressed[pygame.K_DOWN]:
+                player.move(0, player.speed)
+
+            if keys_pressed[pygame.K_LEFT]:
+                player.move(-player.speed, 0)
+
+            if keys_pressed[pygame.K_RIGHT]:
+                player.move(player.speed, 0)
+
+            if keys_pressed[pygame.K_SPACE]:
+                player.compress(player.area/100)
+                print('snowball area: %d' % player.area)
+                print('snowball true area: %d' % player.true_area)
+                print('snowball radius: %d' % player.r)
 
 
 class StateController:
@@ -564,7 +557,8 @@ def main():
 
     # Instantiate view and controllers, as well as registering them
     # as listeners in event_manager
-    game_engine = GameEngineController(event_manager, snowballs, snowflakes,
+    model = Sky(event_manager, snowballs, snowflakes, wind)
+    keyboard = KeyboardController(event_manager, snowballs, snowflakes,
                                        wind)
     view = View(event_manager, snowballs, snowflakes)
     state = StateController(event_manager) 
