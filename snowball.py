@@ -6,6 +6,7 @@ import random
 import socket
 import sys
 import weakref
+import pdb
 
 # Server stuff
 
@@ -168,8 +169,8 @@ class GameEngineController:
                 snowflake.move(0, -1)
                 snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
-            quadtree = Quadtree()
-            for leaf in quadtree.analyze(snowflakes):
+            quadtree = Quadtree(snowflakes)
+            for leaf in quadtree.hit():
                 for snowflake in leaf:
                     for other in leaf:
                         if snowflake.x == other.x and snowflake.y == other.y:
@@ -180,7 +181,7 @@ class GameEngineController:
                                     snowflake.area += math.pi * snowflake.r**2
                                     snowflake.true_area += math.pi * snowflake.r**2
                                     snowflake.r = int(math.sqrt(snowflake.area/math.pi))
-                                    other.x, other.y, other.r = reset()
+                                    other.x, other.y, other.r, other.area, other.true_area = reset()
 
                             
 
@@ -212,7 +213,7 @@ class GameEngineController:
                             snowball.area += snowflake.area
                             snowball.true_area += snowflake.true_area
                             snowball.r = int(math.sqrt(snowball.area/math.pi))
-                            snowflake.x, snowflake.y, snowflake.r = reset()
+                            snowflake.x, snowflake.y, snowflake.r, snowflake.area, snowflake.true_area = reset()
 
                 for other in snowballs:
                     if snowball.x == other.x and snowball.y == other.y:
@@ -229,7 +230,7 @@ class GameEngineController:
 
             for snowflake in snowflakes:
                 if snowflake.y < SNOW_Y_MIN:
-                    snowflake.x, snowflake.y, snowflake.r = reset()
+                    snowflake.x, snowflake.y, snowflake.r, snowflake.area, snowflake.true_area = reset()
 
             # Known bugs:
             # Not yet written for multiplayer, just laid foundation/frameworks
@@ -309,15 +310,14 @@ class View:
 
 
 class Quadtree:
-    def __init__(self):
+    def __init__(self, snowObjects, maxLevels=5, bounds=None):
         # Subregions start empty
         self.nw = self.ne = self.se = self.sw = None
 
-    def analyze(self, snowObjects, maxLevels=8, bounds=None):
-
         maxLevels -= 1
         if maxLevels == 0:
-            return([snowObjects])
+            self.objects = [snowObjects]
+            return
 
         if bounds:
             top, right, bottom, left = bounds
@@ -336,29 +336,49 @@ class Quadtree:
         sw_objects = []
 
         for obj in snowObjects:
-            if obj.top <= center_y and obj.left <= center_x:
+            if obj.top() <= center_y and obj.left() <= center_x:
                 nw_objects.append(obj)
-            if obj.top <= center_y and obj.right >= center_x:
+            if obj.top() <= center_y and obj.right() >= center_x:
                 ne_objects.append(obj)
-            if obj.bottom >= center_y and obj.right >= center_x:
+            if obj.bottom() >= center_y and obj.right() >= center_x:
                 se_objects.append(obj)
-            if obj.bottom >= center_y and obj.left <= center_x:
+            if obj.bottom() >= center_y and obj.left() <= center_x:
                 sw_objects.append(obj)
 
         if nw_objects:
-            self.nw = self.analyze(nw_objects, maxLevels,
+            self.nw = Quadtree(nw_objects, maxLevels,
                                (top, center_x, center_y, left))
+
         if ne_objects:
-            self.ne = self.analyze(ne_objects, maxLevels,
+            self.ne = Quadtree(ne_objects, maxLevels,
                                (top, right, center_y, center_x))
+
         if se_objects:
-            self.se = self.analyze(se_objects, maxLevels,
+            self.se = Quadtree(se_objects, maxLevels,
                                (center_y, right, bottom, center_x))
+
         if sw_objects:
-            self.sw = self.analyze(sw_objects, maxLevels,
+            self.sw = Quadtree(sw_objects, maxLevels,
                                (center_y, center_x, bottom, left))
 
-        return(self.nw + self.ne + self.se + self.sw)
+    def hit(self):
+        hits = []
+
+        if self.nw == self.ne == self.se == self.sw:
+            hits = self.objects
+        
+        if self.nw:
+            hits += self.nw.hit()
+        if self.ne:
+            hits += self.ne.hit()
+        if self.se:
+            hits += self.se.hit()
+        if self.sw:
+            hits += self.sw.hit()
+
+        return(hits)
+
+
 
 
 
@@ -522,7 +542,8 @@ def reset():
     x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
     y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
     r = random.randrange(1, 8)
-    return((x, y, r))
+    area = math.pi * r**2
+    return((x, y, r, area, area))
 
 # Define some colors
 black    = (   0,   0,   0)
@@ -542,7 +563,7 @@ balls = Snowstorm(1, 0, X_MAX, 0, Y_MAX)
 snowballs = balls.attributes('Snowballs', MINIMUM_SNOWBALL_RADIUS, [green])
 
 # Snowflakes
-flakes = Snowstorm(1000, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
+flakes = Snowstorm(500, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
 snowflakes = flakes.attributes('Snowflakes')
 
 # Wind
