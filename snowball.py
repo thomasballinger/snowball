@@ -101,6 +101,15 @@ class QuitEvent:
         pass
 
 
+class Sky:
+    def __init__(self, eventManager, snowballs, snowflakes, wind):
+        self.event_manager = eventManager
+        self.event_manager.register_listener(self)
+        self.snowballs = snowballs
+        self.snowflakes = snowflakes
+        self.wind = wind
+
+
 class GameEngineController:
     def __init__(self, eventManager, snowballs, snowflakes, wind):
         self.event_manager = eventManager
@@ -110,9 +119,6 @@ class GameEngineController:
         self.wind = wind
 
     def notify(self, event):
-
-        global snowflakes
-        global snowballs
 
         quit = None
 
@@ -165,45 +171,28 @@ class GameEngineController:
             # Game Logic
 
             # Move snowflakes
-            for snowflake in snowflakes:
+            for snowflake in self.snowflakes:
                 snowflake.move(0, -1)
                 snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
-            quadtree = Quadtree(snowflakes)
-            for leaf in quadtree.hit():
-                for snowflake in leaf:
-                    for other in leaf:
+            quadtree = Quadtree(self.snowflakes)
+            for region in quadtree.regions():
+                if len(region) == 1:
+                    continue
+                for snowflake in region:
+                    for other in region:
                         if snowflake.x == other.x and snowflake.y == other.y:
                             continue
                         elif collision(snowflake.x, snowflake.y, snowflake.r,
                                        other.x, other.y, other.r):
-                                if snowflake.area >= other.area:
+                                if snowflake.area >= other.area: # 
                                     snowflake.area += math.pi * snowflake.r**2
                                     snowflake.true_area += math.pi * snowflake.r**2
                                     snowflake.r = int(math.sqrt(snowflake.area/math.pi))
                                     other.x, other.y, other.r, other.area, other.true_area = reset()
 
-                            
-
-            # Collisions
-#            for snowflake in snowflakes:
-#                for other in snowflakes:
-#                    if snowflake.x == other.x and snowflake.y == other.y:
-#                        continue
-#                    if collision(snowflake.x, snowflake.y, snowflake.r,
-#                                 other.x, other.y, other.r):
-#                        if snowflake.area >= other.area:
-#                            snowflake.area += math.pi * snowflake.r**2
-#                            snowflake.true_area += math.pi * snowflake.r**2
-#                            snowflake.r = int(math.sqrt(snowflake.area/math.pi))
-#
-#                            x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
-#                            y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
-#                            r = random.randrange(1, 8)
-#                            snowflake.x, snowflake.y, snowflake.r = x, y, r
-
-            for snowball in snowballs:
-                for snowflake in snowflakes:
+            for snowball in self.snowballs:
+                for snowflake in self.snowflakes:
                     if collision(snowball.x, snowball.y, snowball.r,
                                  snowflake.x, snowflake.y, snowflake.r):
                         if snowflake.area >= snowball.area:
@@ -215,7 +204,7 @@ class GameEngineController:
                             snowball.r = int(math.sqrt(snowball.area/math.pi))
                             snowflake.x, snowflake.y, snowflake.r, snowflake.area, snowflake.true_area = reset()
 
-                for other in snowballs:
+                for other in self.snowballs:
                     if snowball.x == other.x and snowball.y == other.y:
                         continue
                     if collision(snowball.x, snowball.y, snowball.r,
@@ -228,7 +217,7 @@ class GameEngineController:
                             snowball.true_area += other.true_area
                             snowball.r = int(math.sqrt(snowball.area/math.pi))
 
-            for snowflake in snowflakes:
+            for snowflake in self.snowflakes:
                 if snowflake.y < SNOW_Y_MIN:
                     snowflake.x, snowflake.y, snowflake.r, snowflake.area, snowflake.true_area = reset()
 
@@ -277,9 +266,6 @@ class View:
         # Used to manage how fast the screen updates
         self.clock = pygame.time.Clock()
 
-
-
-
     def notify(self, event):
 
         global snowflakes
@@ -310,7 +296,7 @@ class View:
 
 
 class Quadtree:
-    def __init__(self, snowObjects, maxLevels=5, bounds=None):
+    def __init__(self, snowObjects, maxLevels=6, bounds=None):
         # Subregions start empty
         self.nw = self.ne = self.se = self.sw = None
 
@@ -361,28 +347,22 @@ class Quadtree:
             self.sw = Quadtree(sw_objects, maxLevels,
                                (center_y, center_x, bottom, left))
 
-    def hit(self):
-        hits = []
+    def regions(self):
+        region = []
 
         if self.nw == self.ne == self.se == self.sw:
-            hits = self.objects
+            region = self.objects
         
         if self.nw:
-            hits += self.nw.hit()
+            region += self.nw.regions()
         if self.ne:
-            hits += self.ne.hit()
+            region += self.ne.regions()
         if self.se:
-            hits += self.se.hit()
+            region += self.se.regions()
         if self.sw:
-            hits += self.sw.hit()
+            region += self.sw.regions()
 
-        return(hits)
-
-
-
-
-
-
+        return(region)
 
 
 class Game:
