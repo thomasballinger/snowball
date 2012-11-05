@@ -249,6 +249,8 @@ class View:
     def __init__(self, eventManager, snowflakes, snowballs):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
+        self.snowflakes = snowflakes
+        self.snowballs = snowballs
 
         pygame.init()
         self.window = pygame.display.set_mode(SCREEN_SIZE)
@@ -261,14 +263,11 @@ class View:
 
     def notify(self, event):
 
-        global snowflakes
-        global snowballs
-
         self.window.fill(black)
         
         if isinstance(event, TickEvent):
 
-            for snowflake in snowflakes:
+            for snowflake in self.snowflakes:
                 snowflake.draw(self.window)            
 
             if event.game_over:
@@ -278,7 +277,7 @@ class View:
                 text_rectangle.centery = self.window.get_rect().centery
                 self.window.blit(text, text_rectangle)
             else:
-                snowballs[0].draw(self.window, antialias=True)
+                self.snowballs[0].draw(self.window, antialias=True)
 
             pygame.display.flip()
 
@@ -560,7 +559,7 @@ def main():
     model = Sky(event_manager, snowballs, snowflakes, wind)
     keyboard = KeyboardController(event_manager, snowballs, snowflakes,
                                        wind)
-    view = View(event_manager, snowballs, snowflakes)
+    view = View(event_manager, snowflakes, snowballs)
     state = StateController(event_manager) 
 
     state.run()
