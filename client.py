@@ -5,6 +5,8 @@ import pygame
 import pygame.gfxdraw
 import socket
 
+import server
+
 snowstorm = 'list of all snowflake objects'
 
 class Event:
@@ -130,4 +132,5 @@ class View:
         if isinstance(event, QuitEvent):
             pass
 
+def main():
 
