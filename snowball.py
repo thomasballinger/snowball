@@ -168,6 +168,22 @@ class GameEngineController:
                 snowflake.move(0, -1)
                 snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
+            quadtree = Quadtree()
+            for leaf in quadtree.analyze(snowflakes):
+                for snowflake in leaf:
+                    for other in leaf:
+                        if snowflake.x == other.x and snowflake.y == other.y:
+                            continue
+                        elif collision(snowflake.x, snowflake.y, snowflake.r,
+                                       other.x, other.y, other.r):
+                                if snowflake.area >= other.area:
+                                    snowflake.area += math.pi * snowflake.r**2
+                                    snowflake.true_area += math.pi * snowflake.r**2
+                                    snowflake.r = int(math.sqrt(snowflake.area/math.pi))
+                                    other.x, other.y, other.r = reset()
+
+                            
+
             # Collisions
 #            for snowflake in snowflakes:
 #                for other in snowflakes:
@@ -293,40 +309,58 @@ class View:
 
 
 class Quadtree:
-    def __init__(self, snowObjects, maxLevels=8, bounds=None):
-
+    def __init__(self):
         # Subregions start empty
         self.nw = self.ne = self.se = self.sw = None
 
+    def analyze(self, snowObjects, maxLevels=8, bounds=None):
+
         maxLevels -= 1
-        if maxLevels = 0:
-            return(snowObjects)
+        if maxLevels == 0:
+            return([snowObjects])
 
         if bounds:
             top, right, bottom, left = bounds
         else:
-            top = min(snowObject.top for snowObject in snowObjects)
-            right = max(snowObject.right for snowObject in snowObjects)
-            bottom = max(snowObject.bottom for snowObject in snowObjects)
-            left = min(snowObject.left for snowObject in snowObjects)
+            top = min(snowObject.top() for snowObject in snowObjects)
+            right = max(snowObject.right() for snowObject in snowObjects)
+            bottom = max(snowObject.bottom() for snowObject in snowObjects)
+            left = min(snowObject.left() for snowObject in snowObjects)
         center_x = (left + right) / 2
         center_y = (top + bottom) / 2
 
         self.objects = []
-        self.nw_objects = []
-        self.ne_objects = []
-        self.se_objects = []
-        self.sw_objects = []
+        nw_objects = []
+        ne_objects = []
+        se_objects = []
+        sw_objects = []
 
         for obj in snowObjects:
             if obj.top <= center_y and obj.left <= center_x:
-                self.nw_objects.append(obj)
+                nw_objects.append(obj)
             if obj.top <= center_y and obj.right >= center_x:
-                self.ne_objects.append(obj)
+                ne_objects.append(obj)
             if obj.bottom >= center_y and obj.right >= center_x:
-                self.se_objects.append(obj)
+                se_objects.append(obj)
             if obj.bottom >= center_y and obj.left <= center_x:
-                self.sw_objects.append(obj)
+                sw_objects.append(obj)
+
+        if nw_objects:
+            self.nw = self.analyze(nw_objects, maxLevels,
+                               (top, center_x, center_y, left))
+        if ne_objects:
+            self.ne = self.analyze(ne_objects, maxLevels,
+                               (top, right, center_y, center_x))
+        if se_objects:
+            self.se = self.analyze(se_objects, maxLevels,
+                               (center_y, right, bottom, center_x))
+        if sw_objects:
+            self.sw = self.analyze(sw_objects, maxLevels,
+                               (center_y, center_x, bottom, left))
+
+        return(self.nw + self.ne + self.se + self.sw)
+
+
 
 
 
