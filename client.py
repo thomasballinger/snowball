@@ -5,12 +5,17 @@ import pygame
 import pygame.gfxdraw
 import socket
 
-snowstorm = 'list of objects'
+snowstorm = 'list of all snowflake objects'
 
 class Event:
     """Superclass for any event that needs to be sent to the EventManager."""
     def __init__(self):
         self.name = "Event"
+
+
+class StartEvent:
+    def __init__(self):
+        pass
 
 
 class TickEvent:
@@ -24,18 +29,13 @@ class QuitEvent:
 
 
 class KeyboardController:
-    def __init__(self, eventManager, snowballs, snowflakes, wind):
+    def __init__(self, eventManager):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
-        self.snowballs = snowballs
-        self.snowflakes = snowflakes
-        self.wind = wind
 
     def notify(self, event):
 
         quit = None
-
-        player = self.snowballs[0]
 
         if isinstance(event, TickEvent):
 
@@ -44,7 +44,8 @@ class KeyboardController:
                 if game_event.type == pygame.QUIT:
                     quit = QuitEvent()
 
-            keys_pressed = pygame.key.get_pressed()
+            pressed = pygame.key.get_pressed()
+            keys_pressed = []
 
             if keys_pressed[pygame.K_ESCAPE]:
                 quit = QuitEvent()
@@ -54,57 +55,36 @@ class KeyboardController:
                 return
 
             # Keyboard Admin Controls
-            if keys_pressed[pygame.K_u]:
-                frames += 1
-                print('frames: %d' % frames)
+            if pressed[pygame.K_u]:
+                keys_pressed += ['u']
 
-            if keys_pressed[pygame.K_d]:
-                frames -= 1
-                print('frames: %d' % frames)
+            if pressed[pygame.K_d]:
+                keys_pressed += ['d']
 
             # Keyboard Game Controls
-            if keys_pressed[pygame.K_UP]:
-                player.move(0, -player.speed)
+            if pressed[pygame.K_UP]:
+                keys_pressed += ['UP']
 
-            if keys_pressed[pygame.K_DOWN]:
-                player.move(0, player.speed)
+            if pressed[pygame.K_DOWN]:
+                keys_pressed += ['DOWN']
 
-            if keys_pressed[pygame.K_LEFT]:
-                player.move(-player.speed, 0)
+            if pressed[pygame.K_LEFT]:
+                keys_pressed += ['LEFT']
 
-            if keys_pressed[pygame.K_RIGHT]:
-                player.move(player.speed, 0)
+            if pressed[pygame.K_RIGHT]:
+                keys_pressed += ['RIGHT']
 
-            if keys_pressed[pygame.K_SPACE]:
-                player.compress(player.area/100)
-                print('snowball area: %d' % player.area)
-                print('snowball true area: %d' % player.true_area)
-                print('snowball radius: %d' % player.r)
+            if pressed[pygame.K_SPACE]:
+                keys_pressed += ['SPACE']
+
+            # Now send keys_pressed to server
 
 
-class StateController:
+class View:
     def __init__(self, eventManager):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
-        self.keep_going = True
-
-    def run(self):
-        while self.keep_going:
-            # TickEvent starts events for the general game
-            event = TickEvent()
-            self.event_manager.post(event)
-            print('frame')
-
-    def notify(self, event):
-        if isinstance(event, QuitEvent):
-            self.keep_going = False
-
-class View:
-    def __init__(self, eventManager, snowflakes, snowballs):
-        self.event_manager = eventManager
-        self.event_manager.register_listener(self)
-        self.snowflakes = snowflakes
-        self.snowballs = snowballs
+        self.snowstorm = None
 
         pygame.init()
         self.window = pygame.display.set_mode(SCREEN_SIZE)
@@ -115,13 +95,25 @@ class View:
         # Used to manage how fast the screen updates
         self.clock = pygame.time.Clock()
 
-    def notify(self, event):
+    def notify(self, event, snowstorm):
 
+        self.snowstorm = snowstorm
         self.window.fill(black)
+
+        if isinstance(event, StartEvent):
+            text = self.font.render('~*~snowball~*~', True, white)
+            text_rectangle = text.get_rect()
+            text_rectangle.centerx = self.window.get_rect().centerx
+            text_rectangle.centery = self.window.get_rect().centery
+            self.window.blit(text, text_rectangle)
+            
+            pygame.display.flip()
+
+            self.clock.tick(30)
         
         if isinstance(event, TickEvent):
 
-            for snowflake in self.snowflakes:
+            for snow in self.snowstorm:
                 snowflake.draw(self.window, antialias=True)            
 
             if event.game_over:
@@ -130,12 +122,10 @@ class View:
                 text_rectangle.centerx = self.window.get_rect().centerx
                 text_rectangle.centery = self.window.get_rect().centery
                 self.window.blit(text, text_rectangle)
-            else:
-                self.snowballs[0].draw(self.window, antialias=True)
 
             pygame.display.flip()
 
-            self.clock.tick(frames)
+            self.clock.tick(30)
 
         if isinstance(event, QuitEvent):
             pass
