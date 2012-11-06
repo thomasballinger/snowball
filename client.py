@@ -12,14 +12,12 @@ import socket
 # SOCK_DGRAM refers to using UDP (and sending 'datagrams' aka packets)
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-hostname = 10.242.11.170
 
 MAX = 65535
 PORT = 1060
 
 
-snowstorm = 'list of all snowflake objects'
-SCREEN_SIZE = [50, 50]
+SCREEN_SIZE = [1200, 500]
 
 class Event:
     """Superclass for any event that needs to be sent to the EventManager."""
@@ -93,15 +91,14 @@ class KeyboardController:
                 keys_pressed += ['SPACE']
 
             keys_pressed = json.dumps(keys_pressed)
-            print keys_pressed
+            s.sendto(keys_pressed, ('127.0.0.1', PORT))
 
 
 
 class View:
-    def __init__(self, eventManager):
-        self.event_manager = eventManager
-        self.event_manager.register_listener(self)
-        self.snowstorm = None
+    def __init__(self):
+        #self.event_manager = eventManager
+        #self.event_manager.register_listener(self)
 
         pygame.init()
         self.window = pygame.display.set_mode(SCREEN_SIZE)
@@ -112,9 +109,8 @@ class View:
         # Used to manage how fast the screen updates
         self.clock = pygame.time.Clock()
 
-    def notify(self, event, snowstorm):
+    def notify(self, event):
 
-        self.snowstorm = snowstorm
         self.window.fill(black)
 
         if isinstance(event, StartEvent):
@@ -123,15 +119,20 @@ class View:
             text_rectangle.centerx = self.window.get_rect().centerx
             text_rectangle.centery = self.window.get_rect().centery
             self.window.blit(text, text_rectangle)
-            
+
             pygame.display.flip()
 
             self.clock.tick(30)
-        
+
         if isinstance(event, TickEvent):
 
-            for snow in self.snowstorm:
-                snowflake.draw(self.window, antialias=True)            
+            snowstorm, address = s.recvfrom(MAX)
+            snowstorm = json.loads(snowstorm)
+
+            if len(snowstorm):
+                for snow in snowstorm:
+                    x, y, r, c = snow
+                    pygame.gfxdraw.aacircle(self.window, x, y, r, c)
 
             if event.game_over:
                 text = self.font.render('You Lose', True, red)
@@ -170,7 +171,6 @@ class TestView:
             pygame.display.flip()
 
             self.clock.tick(30)
-            
 
 # Define some colors
 black    = (   0,   0,   0)
@@ -183,7 +183,7 @@ blue     = (   0,   0, 255)
 
 def main():
     keyboard = KeyboardController()
-    view = TestView()
+    view = View()
     while True:
         keyboard.notify(TickEvent())
         view.notify(TickEvent())

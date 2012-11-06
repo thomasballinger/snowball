@@ -184,10 +184,9 @@ class PrintView:
     def notify(self, event):
         
         if isinstance(event, TickEvent):
-            global snowflakes
-            snowstorm = snowflakes
+            snowstorm = snowflakes + snowballs
             snowstorm = json.dumps(serialize(snowstorm))
-            # Send this to clients
+            s.sendto(snowstorm, address)
 
             if event.game_over:
                 print 'Game Over'
@@ -195,7 +194,7 @@ class PrintView:
         if isinstance(event, QuitEvent):
             print 'Quit Event'
 
-
+address = ''
 class StateController:
     def __init__(self, eventManager):
         self.event_manager = eventManager
@@ -206,11 +205,15 @@ class StateController:
         s.bind(('127.0.0.1', PORT))
         print 'Listening at', s.getsockname()
         while self.keep_going:
-            #keys_pressed, address = s.recvfrom(MAX)
+            global address
+            keys_pressed, address = s.recvfrom(MAX)
+            keys_pressed = json.loads(keys_pressed)
+            print address
+            print keys_pressed
             # TickEvent starts events for the general game
             event = TickEvent()
             self.event_manager.post(event)
-            print('frame')
+            #print('frame')
 
     def notify(self, event):
         if isinstance(event, QuitEvent):
@@ -488,10 +491,7 @@ def serialize(snowstorm):
         y = snow.y
         r = snow.r
         c = snow.color
-        s = snow.speed
-        a = snow.area
-        ta = snow.true_area
-        out.append([x, y, r, c, s, a, ta])
+        out.append([x, y, r, c])
     return(out)
 
 
