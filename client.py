@@ -1,13 +1,15 @@
 # This is the client side
+import json
 import math
 import pdb
 import pygame
 import pygame.gfxdraw
 import socket
 
-import server
+#import server
 
 snowstorm = 'list of all snowflake objects'
+SCREEN_SIZE = [50, 50]
 
 class Event:
     """Superclass for any event that needs to be sent to the EventManager."""
@@ -31,9 +33,10 @@ class QuitEvent:
 
 
 class KeyboardController:
-    def __init__(self, eventManager):
-        self.event_manager = eventManager
-        self.event_manager.register_listener(self)
+    def __init__(self):
+        pass
+#        self.event_manager = eventManager
+#        self.event_manager.register_listener(self)
 
     def notify(self, event):
 
@@ -49,7 +52,7 @@ class KeyboardController:
             pressed = pygame.key.get_pressed()
             keys_pressed = []
 
-            if keys_pressed[pygame.K_ESCAPE]:
+            if pressed[pygame.K_ESCAPE]:
                 quit = QuitEvent()
 
             if quit:
@@ -79,13 +82,15 @@ class KeyboardController:
             if pressed[pygame.K_SPACE]:
                 keys_pressed += ['SPACE']
 
-            # Now send keys_pressed to server
+            keys_pressed = json.dumps(keys_pressed)
+            print keys_pressed
+
 
 
 class View:
-    def __init__(self, eventManager):
-        self.event_manager = eventManager
-        self.event_manager.register_listener(self)
+    def __init__(self):
+#        self.event_manager = eventManager
+#        self.event_manager.register_listener(self)
         self.snowstorm = None
 
         pygame.init()
@@ -132,5 +137,46 @@ class View:
         if isinstance(event, QuitEvent):
             pass
 
+
+class TestView:
+    def __init__(self):
+        self.snowstorm = None
+
+        pygame.init()
+        self.window = pygame.display.set_mode([50,50])
+        pygame.display.set_caption("snowball: bad luck")
+
+        self.font = pygame.font.Font(None, 100)
+
+        # Used to manage how fast the screen updates
+        self.clock = pygame.time.Clock()
+
+    def notify(self, event):
+
+        self.window.fill(black)
+
+        if isinstance(event, TickEvent):
+
+            pygame.display.flip()
+
+            self.clock.tick(30)
+            
+
+# Define some colors
+black    = (   0,   0,   0)
+white    = ( 255, 255, 255)
+green    = (   0, 255,   0)
+red      = ( 255,   0,   0)
+blue     = (   0,   0, 255)
+
+
+
 def main():
+    keyboard = KeyboardController()
+    view = TestView()
+    while True:
+        keyboard.notify(TickEvent())
+        view.notify(TickEvent())
+
+main()
 
