@@ -4,6 +4,7 @@ import pdb
 import random
 import socket
 import sys
+import time
 import weakref
 
 # socket family is AF_INET, the Internet family of protocols
@@ -189,6 +190,7 @@ class PrintView:
             snowstorm = json.dumps(serialize(snowstorm))
             for addr in address:
                 s.sendto(snowstorm, addr)
+            del snowstorm
 
             if event.game_over:
                 print 'Game Over'
@@ -196,7 +198,8 @@ class PrintView:
         if isinstance(event, QuitEvent):
             print 'Quit Event'
 
-address = []
+#lt = int(round(time.time() * 1000)) 
+address = ''
 keys_pressed = []
 class StateController:
     def __init__(self, eventManager):
@@ -212,12 +215,23 @@ class StateController:
             global keys_pressed
             keys_pressed, addr = s.recvfrom(MAX)
             keys_pressed = json.loads(keys_pressed)
-            address += [addr]
+            address = [addr]
+            #count = 0.00
+            #while count < 1.0/30:
+            #    keys_pressed, addr = s.recvfrom(MAX)
+            #    keys_pressed = json.loads(keys_pressed)
+            #    address += [addr]
+            #    del addr
+            #    time.sleep(0.03)
             #print addr
             #print keys_pressed
             # TickEvent starts events for the general game
             event = TickEvent()
             self.event_manager.post(event)
+            #global lt
+            #t = int(round(time.time() * 1000))
+            #print t - lt
+            #lt = t
             #print('frame')
 
     def notify(self, event):
@@ -518,15 +532,7 @@ snowflakes = flakes.attributes('Snowflakes')
 # Wind
 wind = Wind(0,0)
 
-# Frames of screen
-frames = 30
-pps = 1.0/frames # pixels per second
-
-state = 'Start'
-game = Game(state)
-
 # Main function
-
 def main():
     # Instantiate event_manager
     event_manager = EventManager()
