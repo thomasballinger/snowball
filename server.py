@@ -133,7 +133,7 @@ class Sky:
                             continue
                         elif collision(snowflake.x, snowflake.y, snowflake.r,
                                        other.x, other.y, other.r):
-                                if snowflake.area >= other.area: # 
+                                if snowflake.area >= other.area and snowflake.area < 3000: # 
                                     snowflake.area += math.pi * snowflake.r**2
                                     snowflake.true_area += math.pi * snowflake.r**2
                                     snowflake.r = int(math.sqrt(snowflake.area/math.pi))
@@ -213,8 +213,8 @@ class StateController:
             keys_pressed, addr = s.recvfrom(MAX)
             keys_pressed = json.loads(keys_pressed)
             address += [addr]
-            print addr
-            print keys_pressed
+            #print addr
+            #print keys_pressed
             # TickEvent starts events for the general game
             event = TickEvent()
             self.event_manager.post(event)
