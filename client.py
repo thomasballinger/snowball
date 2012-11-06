@@ -8,6 +8,16 @@ import socket
 
 #import server
 
+# socket family is AF_INET, the Internet family of protocols
+# SOCK_DGRAM refers to using UDP (and sending 'datagrams' aka packets)
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+hostname = 10.242.11.170
+
+MAX = 65535
+PORT = 1060
+
+
 snowstorm = 'list of all snowflake objects'
 SCREEN_SIZE = [50, 50]
 
@@ -88,9 +98,9 @@ class KeyboardController:
 
 
 class View:
-    def __init__(self):
-#        self.event_manager = eventManager
-#        self.event_manager.register_listener(self)
+    def __init__(self, eventManager):
+        self.event_manager = eventManager
+        self.event_manager.register_listener(self)
         self.snowstorm = None
 
         pygame.init()
