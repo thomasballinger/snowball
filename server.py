@@ -118,9 +118,10 @@ class Sky:
                 snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
             # TODO: Move snowballs
-            # for snowball in snowballs:
-            #   if client gave us keys_pressed
-            #     snowball.control(keys_pressed)
+            global keys_pressed
+            for snowball in snowballs:
+                if keys_pressed:
+                    snowball.control(keys_pressed)
 
             quadtree = Quadtree(self.snowflakes)
             for region in quadtree.regions():
@@ -186,7 +187,8 @@ class PrintView:
         if isinstance(event, TickEvent):
             snowstorm = snowflakes + snowballs
             snowstorm = json.dumps(serialize(snowstorm))
-            s.sendto(snowstorm, address)
+            for addr in address:
+                s.sendto(snowstorm, addr)
 
             if event.game_over:
                 print 'Game Over'
@@ -194,7 +196,8 @@ class PrintView:
         if isinstance(event, QuitEvent):
             print 'Quit Event'
 
-address = ''
+address = []
+keys_pressed = []
 class StateController:
     def __init__(self, eventManager):
         self.event_manager = eventManager
@@ -206,9 +209,11 @@ class StateController:
         print 'Listening at', s.getsockname()
         while self.keep_going:
             global address
-            keys_pressed, address = s.recvfrom(MAX)
+            global keys_pressed
+            keys_pressed, addr = s.recvfrom(MAX)
             keys_pressed = json.loads(keys_pressed)
-            print address
+            address += [addr]
+            print addr
             print keys_pressed
             # TickEvent starts events for the general game
             event = TickEvent()
@@ -390,11 +395,11 @@ class Snowflake:
             pygame.gfxdraw.aacircle(screen, self.x, self.y, self.r, self.color)
         pygame.draw.circle(screen, self.color, [self.x, self.y], self.r)
 
-    def control(self, clientID, keysPressed):
+    def control(self, keysPressed):
         """Given a list of keysPressed, alter Snowflake's attributes."""
 
         if 'SPACE' in keysPressed:
-            self.compress(player.area/100)
+            self.compress(self.area/100)
             limit = min(MAX_SNOWBALL_SPEED, int(self.true_area // (2 * self.area)))
             self.speed = max(1, limit)
 
