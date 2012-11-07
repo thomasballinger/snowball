@@ -16,7 +16,8 @@ PORT = 1060
 
 #  Global Parameters  #
 
-WIND_MAX = 5
+WIND_ON = False
+WIND_MAX = 4
 X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
 Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 MINIMUM_SNOWBALL_RADIUS = 3
@@ -121,6 +122,7 @@ class Sky:
             # TODO: Move snowballs
             global keys_pressed
             for snowball in snowballs:
+                snowball.wind_move(wind.xSpeed, wind.ySpeed)
                 if keys_pressed:
                     snowball.control(keys_pressed)
 
@@ -369,8 +371,9 @@ class Snowflake:
 
     def wind_move(self, xSpeed, ySpeed):
         """Movement to Snowflake caused by wind."""
-        self.x += dampen(xSpeed, self.true_area / X_DAMPEN)
-        self.y += dampen(ySpeed, self.true_area / Y_DAMPEN)
+        if WIND_ON:
+            self.x += dampen(xSpeed, self.true_area / X_DAMPEN)
+            self.y += dampen(ySpeed, self.true_area / Y_DAMPEN)
 
     def distance_from(self, position):
         """Distance from Snowflake to another [x, y] position"""
