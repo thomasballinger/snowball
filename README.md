@@ -15,10 +15,9 @@ terrorizes all the other snowflake denizens. That's about it though.
 
 TODO
 ----
-* Figure out the JSON to send from client to server and vice versa
-* Build Client
-* Implement wind
-* Snowflakes need to have the ability to engulf each other too.
+* Server Client syncing
+* Manage the addition of more clients
 * Add another snowball player :)
+* Polish
 * Some sort of interface
 * Tons more
