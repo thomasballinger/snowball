@@ -16,8 +16,8 @@ PORT = 1060
 
 #  Global Parameters  #
 
-WIND_MAX = 10
-X_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
+WIND_MAX = 2
+X_WIND = [-2, -1, -1, 0, 0, 0, 0, 1, 1, 2]
 Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 MINIMUM_SNOWBALL_RADIUS = 3
 MAX_SNOWBALL_SPEED = 20
@@ -30,13 +30,13 @@ Y_MAX = 500
 
 # Set the area of the snowstorm
 
-SNOW_X_MAX = X_MAX + 200
-SNOW_X_MIN = -200
+SNOW_X_MAX = X_MAX + 500
+SNOW_X_MIN = -500
 SNOW_Y_MAX = Y_MAX + 300
 SNOW_Y_MIN = -300
 
 # Dampening Factors
-X_DAMPEN = 1000
+X_DAMPEN = 200
 Y_DAMPEN = 500
 
 # Helper Functions
@@ -56,8 +56,8 @@ def sticky_sum(initial, shift):
 def dampen(initial, dampenAmount):
     """ Given a initial number and a dampening amount, return the dampened
     result as an int."""
-    initial_sign = math.copysign(initial, 1)
-    dampenAmount = math.copysign(-initial_sign, dampenAmount)
+    initial_sign = math.copysign(1, initial)
+    dampenAmount = math.copysign(dampenAmount, -initial_sign)
     result = sticky_sum(initial, dampenAmount)
     return(int(result))
 
@@ -123,6 +123,8 @@ class Sky:
             for snowball in snowballs:
                 if keys_pressed:
                     snowball.control(keys_pressed)
+
+            wind.change_speed(random.choice(X_WIND), 0)
 
             quadtree = Quadtree(self.snowflakes)
             for region in quadtree.regions():
@@ -465,10 +467,14 @@ class Wind:
     def change_speed(self, xChange, yChange):
         self.xSpeed += xChange
         self.ySpeed += yChange
-        if math.fabs(self.xSpeed) >= WIND_MAX:
-            if math.fabs(self.ySpeed) >= WIND_MAX:
-                self.ySpeed = math.copysign(WIND_MAX, self.ySpeed)
-            self.xSpeed = math.copysign(WIND_MAX, self.xSpeed)
+        if self.xSpeed >= WIND_MAX:
+            self.xSpeed = WIND_MAX
+        if self.xSpeed <= -WIND_MAX:
+            self.xSpeed = -WIND_MAX
+        if self.ySpeed >= WIND_MAX:
+            self.ySpeed = WIND_MAX
+        if self.ySpeed <= -WIND_MAX:
+            self.ySpeed = -WIND_MAX
 
     def x_change(self, transition):
         "Uniformly draw the wind speed change in the x axis"
@@ -480,8 +486,8 @@ class Wind:
         i = random.randrange(len(transition))
         return(transition[i])
 
-    #def effect_on(self, obj):
-    #    return(wind.speed dampens by obj.r // 5?
+    def effect_on(self, obj):
+        return(dampen(wind.speed, obj.r // 5))
 
 #  Functions  #
 
@@ -526,11 +532,11 @@ balls = Snowstorm(1, 0, X_MAX, 0, Y_MAX)
 snowballs = balls.attributes('Snowballs', MINIMUM_SNOWBALL_RADIUS, [green])
 
 # Snowflakes
-flakes = Snowstorm(500, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
+flakes = Snowstorm(700, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
 snowflakes = flakes.attributes('Snowflakes')
 
 # Wind
-wind = Wind(0,0)
+wind = Wind(-1,0)
 
 # Main function
 def main():
