@@ -16,8 +16,8 @@ PORT = 1060
 
 #  Global Parameters  #
 
-WIND_MAX = 2
-X_WIND = [-2, -1, -1, 0, 0, 0, 0, 1, 1, 2]
+WIND_MAX = 5
+X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
 Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 MINIMUM_SNOWBALL_RADIUS = 3
 MAX_SNOWBALL_SPEED = 20
@@ -36,7 +36,7 @@ SNOW_Y_MAX = Y_MAX + 300
 SNOW_Y_MIN = -300
 
 # Dampening Factors
-X_DAMPEN = 200
+X_DAMPEN = 50
 Y_DAMPEN = 500
 
 # Helper Functions
@@ -136,9 +136,9 @@ class Sky:
                             continue
                         elif collision(snowflake.x, snowflake.y, snowflake.r,
                                        other.x, other.y, other.r):
-                                if snowflake.area >= other.area and snowflake.area < 3000: # 
-                                    snowflake.area += math.pi * snowflake.r**2
-                                    snowflake.true_area += math.pi * snowflake.r**2
+                                if snowflake.area >= other.area and snowflake.area < 3000: 
+                                    snowflake.area += other.area
+                                    snowflake.true_area += other.true_area
                                     snowflake.r = int(math.sqrt(snowflake.area/math.pi))
                                     other.x, other.y, other.r, other.area, other.true_area = reset()
 
@@ -170,9 +170,9 @@ class Sky:
                             snowball.true_area += other.true_area
                             snowball.r = int(math.sqrt(snowball.area/math.pi))
 
-            for snowflake in self.snowflakes:
-                if snowflake.y < SNOW_Y_MIN:
-                    snowflake.x, snowflake.y, snowflake.r, snowflake.area, snowflake.true_area = reset()
+            for sf in self.snowflakes:
+                if sf.y < SNOW_Y_MIN or sf.x < SNOW_X_MIN or sf.x > SNOW_X_MAX:
+                    sf.x, sf.y, sf.r, sf.area, sf.true_area = reset()
 
             # TODO: Known bugs:
             # Not yet written for multiplayer, just laid foundation/frameworks
@@ -192,7 +192,6 @@ class PrintView:
             snowstorm = json.dumps(serialize(snowstorm))
             for addr in address:
                 s.sendto(snowstorm, addr)
-            del snowstorm
 
             if event.game_over:
                 print 'Game Over'
@@ -504,7 +503,7 @@ def collision(xOne, yOne, rOne, xTwo, yTwo, rTwo):
 def reset():
     """Return a tuple of x, y, r values to reset a snowflake."""
     x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
-    y = random.randrange(SNOW_Y_MAX - 5, SNOW_Y_MAX + 5)
+    y = random.randrange(SNOW_Y_MAX, SNOW_Y_MAX + 200)
     r = random.randrange(1, 8)
     area = math.pi * r**2
     return((x, y, r, area, area))
