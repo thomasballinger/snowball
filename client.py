@@ -5,6 +5,7 @@ import pdb
 import pygame
 import pygame.gfxdraw
 import socket
+import time
 import weakref
 
 #import server
@@ -17,7 +18,13 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 MAX = 65535
 PORT = 1060
 SERVER = '127.0.0.1'
-TICK_TIME = 31
+TICK_TIME = 30
+lt = int(round(time.time() * 1000))
+
+# Server will delegate game_master identity to first client to connect.
+# If True, this client will initialize the start of the game
+game_master = False
+
 
 SCREEN_SIZE = [1200, 500]
 
@@ -78,9 +85,29 @@ class StateController:
 
     def run(self):
 
+        global lt
+        global players
+        global game_master
+
         while self.connect and self.start and self.keep_going:
             event = ConnectEvent()
             self.event_manager.post(event)
+            t = int(round(time.time() * 1000))
+            if TICK_TIME - t + lt > 0:
+                s.timeout(TICK_TIME - t + lt)
+                try:
+                    players, _ = s.recvfrom(MAX)
+                    if len(players) > 2:
+                        game_master = True
+                        players = json.loads(players)[1]
+                    players = int(players)
+                except socket.timeout:
+                    print """Can't seem to connect to the server...
+                             1. Is it on?
+                             2. Do you have the correct IP address for the server?
+                             (Or you could just try again?)"""
+            lt = t
+            clock.tick(32)
 
         while self.start and self.keep_going:
             print 'connecting to server...'
@@ -101,10 +128,12 @@ class StateController:
             else:
                 del server_msg
                 print """You have the wrong IP address for the server."""
+            clock.tick(32)
 
         while self.keep_going:
             event = TickEvent()
             self.event_manager.post(event)
+            clock.tick(32)
 
     def notify(self, event):
         if isinstance(event, QuitEvent):
@@ -178,29 +207,48 @@ class View:
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
 
-        pygame.init()
         self.window = pygame.display.set_mode(SCREEN_SIZE)
-        pygame.display.set_caption("snowball: bad luck")
+        pygame.display.set_caption("snowball, the game")
 
         self.font = pygame.font.Font(None, 100)
 
-        # Used to manage how fast the screen updates
-        self.clock = pygame.time.Clock()
 
     def notify(self, event):
 
         self.window.fill(black)
 
-        if isinstance(event, StartEvent):
-            text = self.font.render('~*~snowball~*~', True, white)
+
+        if isinstance(event, ConnectEvent):
+
+            title = self.font.render('~*~snowball~*~', True, white)
+            title_rectangle = title.get_rect()
+            title_rectangle.centerx = self.window.get_rect().centerx
+            title_rectangle.centery = 200
+            self.window.blit(title, title_rectangle)
+
+            text = self.font.render('Snowballs Formed: %d' % players, True, white)
             text_rectangle = text.get_rect()
             text_rectangle.centerx = self.window.get_rect().centerx
-            text_rectangle.centery = self.window.get_rect().centery
+            text_rectangle.centery = 200
             self.window.blit(text, text_rectangle)
 
             pygame.display.flip()
 
-            self.clock.tick(32)
+        if isinstance(event, StartEvent):
+
+            text = self.font.render('~*~snowball~*~', True, white)
+            text_rectangle = text.get_rect()
+            text_rectangle.centerx = self.window.get_rect().centerx
+            text_rectangle.centery = 200
+            self.window.blit(text, text_rectangle)
+
+            text = self.font.render('~*~snowball~*~', True, white)
+            text_rectangle = text.get_rect()
+            text_rectangle.centerx = self.window.get_rect().centerx
+            text_rectangle.centery = 200
+            self.window.blit(text, text_rectangle)
+
+            pygame.display.flip()
 
         if isinstance(event, TickEvent):
 
@@ -222,7 +270,6 @@ class View:
 
             pygame.display.flip()
 
-            self.clock.tick(32)
 
         if isinstance(event, QuitEvent):
             pass
@@ -236,6 +283,10 @@ red      = ( 255,   0,   0)
 blue     = (   0,   0, 255)
 
 
+pygame.init()
+
+# Used to manage how fast the screen updates
+clock = pygame.time.Clock()
 
 def main():
     event_manager = EventManager()
