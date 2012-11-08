@@ -193,12 +193,12 @@ class KeyboardController:
                 self.event_manager.post(quit)
                 return
 
-            if pressed[pygame.K_s]:
+            if pressed[pygame.K_s] and game_master:
                 start = json.dumps(['START'], separators=(',',':'))
                 s.sendto(start, (SERVER, PORT))
 
 
-        if isinstance(event, TickEvent) or isinstance(event, StartEvent):
+        if isinstance(event, TickEvent):
 
             # Quitting
             for game_event in pygame.event.get():
@@ -215,33 +215,23 @@ class KeyboardController:
                 self.event_manager.post(quit)
                 return
 
-            # Keyboard Admin Controls
-            if pressed[pygame.K_u]:
-                keys_pressed += ['u']
+            if not event.game_over:
+                # Keyboard Game Controls
+                if pressed[pygame.K_UP]:
+                    keys_pressed += ['UP']
 
-            if pressed[pygame.K_d]:
-                keys_pressed += ['d']
+                if pressed[pygame.K_DOWN]:
+                    keys_pressed += ['DOWN']
 
-            # Keyboard Game Controls
-            if pressed[pygame.K_UP]:
-                keys_pressed += ['UP']
+                if pressed[pygame.K_LEFT]:
+                    keys_pressed += ['LEFT']
 
-            if pressed[pygame.K_DOWN]:
-                keys_pressed += ['DOWN']
+                if pressed[pygame.K_RIGHT]:
+                    keys_pressed += ['RIGHT']
 
-            if pressed[pygame.K_LEFT]:
-                keys_pressed += ['LEFT']
+                if pressed[pygame.K_SPACE]:
+                    keys_pressed += ['SPACE']
 
-            if pressed[pygame.K_RIGHT]:
-                keys_pressed += ['RIGHT']
-
-            if pressed[pygame.K_SPACE]:
-                keys_pressed += ['SPACE']
-
-            if isinstance(event,TickEvent):
-                keys_pressed = json.dumps(keys_pressed, separators=(',',':'))
-                s.sendto(keys_pressed, (SERVER, PORT))
-            elif 'SPACE' in keys_pressed:
                 keys_pressed = json.dumps(keys_pressed, separators=(',',':'))
                 s.sendto(keys_pressed, (SERVER, PORT))
 
@@ -262,7 +252,6 @@ class View:
     def notify(self, event):
 
         self.window.fill(black)
-
 
         if isinstance(event, ConnectEvent):
 
@@ -289,23 +278,21 @@ class View:
             self.window.blit(title, title_rectangle)
 
             if game_master:
-                text = self.msg.render('snowballs formed: %d' % players, True, blue)
-                text_rectangle = text.get_rect()
-                text_rectangle.centerx = self.window.get_rect().centerx
-                text_rectangle.centery = 400
-                self.window.blit(text, text_rectangle)
-            else:
-                text = self.msg.render('snowballs formed: %d' % players, True, white)
-                text_rectangle = text.get_rect()
-                text_rectangle.centerx = self.window.get_rect().centerx
-                text_rectangle.centery = 350
-                self.window.blit(text, text_rectangle)
-
                 text2 = self.msg.render('hit SPACE to start game', True, blue)
                 text2_rectangle = text2.get_rect()
                 text2_rectangle.centerx = self.window.get_rect().centerx
                 text2_rectangle.centery = 400
                 self.window.blit(text2, text2_rectangle)
+
+                text = self.msg.render('snowballs formed: %d' % players, True, white)
+
+            else:
+                text = self.msg.render('snowballs formed: %d' % players, True, blue)
+
+            text_rectangle = text.get_rect()
+            text_rectangle.centerx = self.window.get_rect().centerx
+            text_rectangle.centery = 350
+            self.window.blit(text, text_rectangle)
 
             pygame.display.flip()
 
@@ -328,7 +315,6 @@ class View:
                 self.window.blit(text, text_rectangle)
 
             pygame.display.flip()
-
 
         if isinstance(event, QuitEvent):
             pass
