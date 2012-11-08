@@ -157,6 +157,47 @@ class KeyboardController:
 
         quit = None
 
+        if isinstance(event, ConnectEvent):
+
+            # Quitting
+            for game_event in pygame.event.get():
+                if game_event.type == pygame.QUIT:
+                    quit = QuitEvent()
+
+            pressed = pygame.key.get_pressed()
+
+            if pressed[pygame.K_ESCAPE]:
+                quit = QuitEvent()
+
+            if quit:
+                self.event_manager.post(quit)
+                return
+
+            if pressed[pygame.K_SPACE]:
+                keys_pressed = json.dumps(['SPACE'], separators=(',',':'))
+                s.sendto(keys_pressed, (SERVER, PORT))
+
+        if isinstance(event, StartEvent):
+
+            # Quitting
+            for game_event in pygame.event.get():
+                if game_event.type == pygame.QUIT:
+                    quit = QuitEvent()
+
+            pressed = pygame.key.get_pressed()
+
+            if pressed[pygame.K_ESCAPE]:
+                quit = QuitEvent()
+
+            if quit:
+                self.event_manager.post(quit)
+                return
+
+            if pressed[pygame.K_s]:
+                start = json.dumps(['START'], separators=(',',':'))
+                s.sendto(start, (SERVER, PORT))
+
+
         if isinstance(event, TickEvent) or isinstance(event, StartEvent):
 
             # Quitting
