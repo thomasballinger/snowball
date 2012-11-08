@@ -94,6 +94,11 @@ class EventManager:
             listener.notify(event)
 
 
+class ConnectEvent:
+    def __init__(self):
+        pass
+
+
 class TickEvent:
     def __init__(self, game_over=False):
         self.game_over = game_over
@@ -103,12 +108,8 @@ class QuitEvent:
     def __init__(self):
         pass
 
-class ClientConnectEvent:
-    def __init__(self, client):
-        self.client = client
 
-
-class Sky:
+class Model:
     def __init__(self, eventManager, snowballs, snowflakes, wind):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
@@ -124,7 +125,6 @@ class Sky:
                 snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
             # Move snowballs
-            global keys_pressed
             for snowball in snowballs:
                 snowball.wind_move(wind.xSpeed, wind.ySpeed)
                 if keys_pressed:
@@ -201,7 +201,7 @@ class PrintView:
 
         if isinstance(event, TickEvent):
             snowstorm = snowflakes + snowballs
-            snowstorm = json.dumps(serialize(snowstorm))
+            snowstorm = json.dumps(serialize(snowstorm), separators=(',',':'))
             for addr in address:
                 s.sendto(snowstorm, addr)
 
@@ -217,10 +217,13 @@ keys_pressed = []
 IDs = [random.randrange(100000, 999999) for i in range(100)]
 IDs = set(IDs)
 clientID = {}
+clients = {}
 class StateController:
     def __init__(self, eventManager):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
+        self.connect = True
+        self.assigned_master = False
         self.start = True
         self.keep_going = True
 
@@ -230,19 +233,33 @@ class StateController:
         print 'Listening at', s.getsockname()
         global address
         global keys_pressed
+        global clients
         global IDs
         global clientID
 
-        while self.start:
-            data, addr = s.recvfrom(MAX)
-            msg = str(len(data) - 1)
-            s.sendto(msg, (addr, PORT))
+        while self.connect and self.start and self.keep_going:
+            msg, addr = s.recvfrom(MAX)
+            msg = json.loads(msg)
+            if not assigned_master:
+                if msg[0] == 'SPACE':
+                    clients[addr] = 'MASTER'
+                    #ID = random.choice(IDs)
+                    #clientID[addr] = ID
+                    #IDs.remove(ID)
+                    msg = ['MASTER', 1]
+                    s.sendto(msg, (addr, PORT))
+                    self.assigned_master = True
+                    continue
             if addr not in address:
-                address += [addr]
-                ID = random.choice(IDs)
-                clientID[addr] = ID
-                IDs.remove(ID)
-            
+                clients[addr] = 'SLAVE'
+                #ID = random.choice(IDs)
+                #clientID[addr] = ID
+                #IDs.remove(ID)
+            msg = len(clients.keys())
+            s.sendto(msg, (addr, PORT))
+ 
+        while self.start and self.keep_going:
+           
         while self.keep_going:
             keys_pressed, addr = s.recvfrom(MAX)
             keys_pressed = json.loads(keys_pressed)
@@ -579,7 +596,7 @@ def main():
 
     # Instantiate view and controllers, as well as registering them
     # as listeners in event_manager
-    model = Sky(event_manager, snowballs, snowflakes, wind)
+    model = Model(event_manager, snowballs, snowflakes, wind)
     view = PrintView(event_manager)
     state = StateController(event_manager) 
 
