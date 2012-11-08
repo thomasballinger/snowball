@@ -5,6 +5,7 @@ import pdb
 import pygame
 import pygame.gfxdraw
 import socket
+import weakref
 
 #import server
 
@@ -16,6 +17,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 MAX = 65535
 PORT = 1060
 SERVER = '127.0.0.1'
+TICK_TIME = 31
 
 SCREEN_SIZE = [1200, 500]
 
@@ -46,6 +48,10 @@ class EventManager:
             listener.notify(event)
 
 
+class ConnectEvent:
+    def __init__(self):
+        pass
+
 
 class StartEvent:
     def __init__(self):
@@ -62,16 +68,21 @@ class QuitEvent:
         pass
 
 
-class ServerReceiver:
+class StateController:
     def __init__(self, eventManager):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
+        self.connect = True
         self.start = True
         self.keep_going = True
 
     def run(self):
 
-        while self.start:
+        while self.connect and self.start and self.keep_going:
+            event = ConnectEvent()
+            self.event_manager.post(event)
+
+        while self.start and self.keep_going:
             print 'connecting to server...'
             msg = 'h', 'i' * random.randint(2, 20)
             s.sendto(msg, (SERVER, PORT))
@@ -96,10 +107,12 @@ class ServerReceiver:
             self.event_manager.post(event)
 
     def notify(self, event):
-        if isinstance(event, TickEvent):
-            self.start = False
         if isinstance(event, QuitEvent):
             self.keep_going = False
+        if isinstance(event, TickEvent):
+            self.start = False
+        if isinstance(event, StartEvent):
+            self.connect = False
 
 
 class KeyboardController:
@@ -151,8 +164,12 @@ class KeyboardController:
             if pressed[pygame.K_SPACE]:
                 keys_pressed += ['SPACE']
 
-            keys_pressed = json.dumps(keys_pressed)
-            s.sendto(keys_pressed, ('SERVER', PORT))
+            if isinstance(event,TickEvent):
+                keys_pressed = json.dumps(keys_pressed, separators=(',',':'))
+                s.sendto(keys_pressed, (SERVER, PORT))
+            elif 'SPACE' in keys_pressed:
+                keys_pressed = json.dumps(keys_pressed, separators=(',',':'))
+                s.sendto(keys_pressed, (SERVER, PORT))
 
 
 
@@ -223,10 +240,10 @@ blue     = (   0,   0, 255)
 def main():
     event_manager = EventManager()
     keyboard = KeyboardController(event_manager)
+    state = StateController(event_manager)
     view = View(event_manager)
-    while True:
-        keyboard.notify(TickEvent())
-        view.notify(TickEvent())
+
+    state.run()
 
 main()
 
