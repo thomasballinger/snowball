@@ -24,7 +24,7 @@ lt = int(round(time.time() * 1000))
 # Server will delegate game_master identity to first client to connect.
 # If True, this client will initialize the start of the game
 game_master = False
-
+players = 0
 
 SCREEN_SIZE = [1200, 500]
 
@@ -210,7 +210,8 @@ class View:
         self.window = pygame.display.set_mode(SCREEN_SIZE)
         pygame.display.set_caption("snowball, the game")
 
-        self.font = pygame.font.Font(None, 100)
+        self.title = pygame.font.Font(None, 100)
+        self.msg = pygame.font.Font(None, 40)
 
 
     def notify(self, event):
@@ -220,33 +221,48 @@ class View:
 
         if isinstance(event, ConnectEvent):
 
-            title = self.font.render('~*~snowball~*~', True, white)
+            title = self.title.render('~*~snowball~*~', True, white)
             title_rectangle = title.get_rect()
             title_rectangle.centerx = self.window.get_rect().centerx
             title_rectangle.centery = 200
             self.window.blit(title, title_rectangle)
 
-            text = self.font.render('Snowballs Formed: %d' % players, True, white)
+            text = self.msg.render('hit SPACE to connect to server', True, blue)
             text_rectangle = text.get_rect()
             text_rectangle.centerx = self.window.get_rect().centerx
-            text_rectangle.centery = 200
+            text_rectangle.centery = 400
             self.window.blit(text, text_rectangle)
 
             pygame.display.flip()
 
         if isinstance(event, StartEvent):
 
-            text = self.font.render('~*~snowball~*~', True, white)
-            text_rectangle = text.get_rect()
-            text_rectangle.centerx = self.window.get_rect().centerx
-            text_rectangle.centery = 200
-            self.window.blit(text, text_rectangle)
+            title = self.title.render('~*~snowball~*~', True, white)
+            title_rectangle = title.get_rect()
+            title_rectangle.centerx = self.window.get_rect().centerx
+            title_rectangle.centery = 200
+            self.window.blit(title, title_rectangle)
 
-            text = self.font.render('~*~snowball~*~', True, white)
-            text_rectangle = text.get_rect()
-            text_rectangle.centerx = self.window.get_rect().centerx
-            text_rectangle.centery = 200
-            self.window.blit(text, text_rectangle)
+            if game_master:
+                text = self.msg.render('snowballs formed: %d' % players, True, blue)
+                text_rectangle = text.get_rect()
+                text_rectangle.centerx = self.window.get_rect().centerx
+                text_rectangle.centery = 400
+                self.window.blit(text, text_rectangle)
+            else:
+                text = self.msg.render('snowballs formed: %d' % players, True, white)
+                text_rectangle = text.get_rect()
+                text_rectangle.centerx = self.window.get_rect().centerx
+                text_rectangle.centery = 350
+                self.window.blit(text, text_rectangle)
+
+                text2 = self.msg.render('hit SPACE to start game', True, blue)
+                text2_rectangle = text2.get_rect()
+                text2_rectangle.centerx = self.window.get_rect().centerx
+                text2_rectangle.centery = 400
+                self.window.blit(text2, text2_rectangle)
+
+
 
             pygame.display.flip()
 
