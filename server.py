@@ -223,7 +223,7 @@ class StateController:
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
         self.connect = True
-        self.assigned_master = False
+        self.master = None
         self.start = True
         self.keep_going = True
 
@@ -240,7 +240,7 @@ class StateController:
         while self.connect and self.start and self.keep_going:
             msg, addr = s.recvfrom(MAX)
             msg = json.loads(msg)
-            if not assigned_master:
+            if not self.master:
                 if msg[0] == 'SPACE':
                     clients[addr] = 'MASTER'
                     #ID = random.choice(IDs)
@@ -248,7 +248,12 @@ class StateController:
                     #IDs.remove(ID)
                     msg = ['MASTER', 1]
                     s.sendto(msg, (addr, PORT))
-                    self.assigned_master = True
+                    self.master = addr
+                    continue
+            if addr == self.master:
+                if msg[0] == 'START':
+                    event = TickEvent()
+                    self.notify(event)
                     continue
             if addr not in address:
                 clients[addr] = 'SLAVE'
