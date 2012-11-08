@@ -4,6 +4,7 @@ import pdb
 import random
 import socket
 import sys
+import threading
 import time
 import weakref
 
@@ -16,12 +17,15 @@ PORT = 1060
 
 #  Global Parameters  #
 
+TICK_TIME = 31
+
 WIND_ON = False
-WIND_MAX = 4
+WIND_MAX = 5
 X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
 Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 MINIMUM_SNOWBALL_RADIUS = 3
 MAX_SNOWBALL_SPEED = 20
+IMMUNE_TIME = 2000
 
 # Set the width and height of the screen [width,height]
 
@@ -37,7 +41,7 @@ SNOW_Y_MAX = Y_MAX + 300
 SNOW_Y_MIN = -300
 
 # Dampening Factors
-X_DAMPEN = 50
+X_DAMPEN = 100
 Y_DAMPEN = 500
 
 # Helper Functions
@@ -119,7 +123,7 @@ class Sky:
                 snowflake.move(0, -1)
                 snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
-            # TODO: Move snowballs
+            # Move snowballs
             global keys_pressed
             for snowball in snowballs:
                 snowball.wind_move(wind.xSpeed, wind.ySpeed)
@@ -189,6 +193,12 @@ class PrintView:
 
     def notify(self, event):
         
+        if isinstance(event, StartEvent):
+            for addr in address:
+                for ID in clientID:
+                    s.sendto(ID, addr)
+            pass
+
         if isinstance(event, TickEvent):
             snowstorm = snowflakes + snowballs
             snowstorm = json.dumps(serialize(snowstorm))
@@ -201,24 +211,41 @@ class PrintView:
         if isinstance(event, QuitEvent):
             print 'Quit Event'
 
-#lt = int(round(time.time() * 1000)) 
-address = ''
+lt = int(round(time.time() * 1000)) 
+addresses = []
 keys_pressed = []
+IDs = [random.randrange(100000, 999999) for i in range(100)]
+IDs = set(IDs)
+clientID = {}
 class StateController:
     def __init__(self, eventManager):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
+        self.start = True
         self.keep_going = True
 
     def run(self):
+
         s.bind(('127.0.0.1', PORT))
         print 'Listening at', s.getsockname()
+        global address
+        global keys_pressed
+        global IDs
+        global clientID
+
+        while self.start:
+            data, addr = s.recvfrom(MAX)
+            msg = str(len(data) - 1)
+            s.sendto(msg, (addr, PORT))
+            if addr not in address:
+                address += [addr]
+                ID = random.choice(IDs)
+                clientID[addr] = ID
+                IDs.remove(ID)
+            
         while self.keep_going:
-            global address
-            global keys_pressed
             keys_pressed, addr = s.recvfrom(MAX)
             keys_pressed = json.loads(keys_pressed)
-            address = [addr]
             #count = 0.00
             #while count < 1.0/30:
             #    keys_pressed, addr = s.recvfrom(MAX)
@@ -229,17 +256,22 @@ class StateController:
             #print addr
             #print keys_pressed
             # TickEvent starts events for the general game
-            event = TickEvent()
+            if self.start:
+                event = StartEvent()
+            else:
+                event = TickEvent()
             self.event_manager.post(event)
-            #global lt
-            #t = int(round(time.time() * 1000))
-            #print t - lt
-            #lt = t
-            #print('frame')
+            global lt
+            t = int(round(time.time() * 1000))
+            if TICK_TIME - t + lt > 0:
+                time.sleep(float(TICK_TIME - t + lt)/1000)
+            lt = t
 
     def notify(self, event):
         if isinstance(event, QuitEvent):
             self.keep_going = False
+        elif isinstance(event, TickEvent):
+            self.start = False
 
 
 class ConnectionController:

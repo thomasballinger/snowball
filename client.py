@@ -15,7 +15,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 MAX = 65535
 PORT = 1060
-
+SERVER = '127.0.0.1'
 
 SCREEN_SIZE = [1200, 500]
 
@@ -23,6 +23,28 @@ class Event:
     """Superclass for any event that needs to be sent to the EventManager."""
     def __init__(self):
         self.name = "Event"
+
+
+class EventManager:
+    """Coordinates communication between Model, View, and Controller."""
+    def __init__(self):
+        self.listeners = weakref.WeakKeyDictionary()
+
+    # Listeners are objects that are awaiting input on which event they should
+    # process (ie TickEvent or QuitEvent)
+    def register_listener(self, listener):
+        self.listeners[listener] = 1
+
+    def unregister_listener(self, listener):
+        if listener in self.listeners.keys():
+            del self.listeners[listener]
+
+    def post(self, event):
+        """Post a new event broadcasted to listeners"""
+        for listener in self.listeners.keys():
+            # NOTE: if listener was unregistered then it will be gone already
+            listener.notify(event)
+
 
 
 class StartEvent:
@@ -40,17 +62,56 @@ class QuitEvent:
         pass
 
 
+class ServerReceiver:
+    def __init__(self, eventManager):
+        self.event_manager = eventManager
+        self.event_manager.register_listener(self)
+        self.start = True
+        self.keep_going = True
+
+    def run(self):
+
+        while self.start:
+            print 'connecting to server...'
+            msg = 'h', 'i' * random.randint(2, 20)
+            s.sendto(msg, (SERVER, PORT))
+            s.settimeout(2)
+            try:
+                server_msg, addr = s.recvfrom(MAX)
+            except socket.timeout:
+                print """Can't seem to connect to the server...
+                         1. Is it on?
+                         2. Do you have the correct IP address for the server?
+                         (Or you could just try again?)"""
+                return
+            if int(server_msg) == (len(msg) - 1):
+                event = StartEvent()
+                self.event_manager.post(event)
+            else:
+                del server_msg
+                print """You have the wrong IP address for the server."""
+
+        while self.keep_going:
+            event = TickEvent()
+            self.event_manager.post(event)
+
+    def notify(self, event):
+        if isinstance(event, TickEvent):
+            self.start = False
+        if isinstance(event, QuitEvent):
+            self.keep_going = False
+
+
 class KeyboardController:
-    def __init__(self):
-        pass
-#        self.event_manager = eventManager
-#        self.event_manager.register_listener(self)
+    def __init__(self, eventManager):
+        self.event_manager = eventManager
+        self.event_manager.register_listener(self)
 
     def notify(self, event):
 
         quit = None
 
-        if isinstance(event, TickEvent):
+        if isinstance(event, TickEvent) or isinstance(event, StartEvent):
 
             # Quitting
             for game_event in pygame.event.get():
@@ -91,14 +152,14 @@ class KeyboardController:
                 keys_pressed += ['SPACE']
 
             keys_pressed = json.dumps(keys_pressed)
-            s.sendto(keys_pressed, ('127.0.0.1', PORT))
+            s.sendto(keys_pressed, ('SERVER', PORT))
 
 
 
 class View:
-    def __init__(self):
-        #self.event_manager = eventManager
-        #self.event_manager.register_listener(self)
+    def __init__(self, eventManager):
+        self.event_manager = eventManager
+        self.event_manager.register_listener(self)
 
         pygame.init()
         self.window = pygame.display.set_mode(SCREEN_SIZE)
@@ -122,7 +183,7 @@ class View:
 
             pygame.display.flip()
 
-            self.clock.tick(30)
+            self.clock.tick(32)
 
         if isinstance(event, TickEvent):
 
@@ -133,6 +194,7 @@ class View:
                 for snow in snowstorm:
                     x, y, r, c = snow
                     pygame.gfxdraw.aacircle(self.window, x, y, r, c)
+                    pygame.gfxdraw.filled_circle(self.window, x, y, r, c)
 
             if event.game_over:
                 text = self.font.render('You Lose', True, red)
@@ -143,34 +205,11 @@ class View:
 
             pygame.display.flip()
 
-            self.clock.tick(30)
+            self.clock.tick(32)
 
         if isinstance(event, QuitEvent):
             pass
 
-
-class TestView:
-    def __init__(self):
-        self.snowstorm = None
-
-        pygame.init()
-        self.window = pygame.display.set_mode([50,50])
-        pygame.display.set_caption("snowball: bad luck")
-
-        self.font = pygame.font.Font(None, 100)
-
-        # Used to manage how fast the screen updates
-        self.clock = pygame.time.Clock()
-
-    def notify(self, event):
-
-        self.window.fill(black)
-
-        if isinstance(event, TickEvent):
-
-            pygame.display.flip()
-
-            self.clock.tick(30)
 
 # Define some colors
 black    = (   0,   0,   0)
@@ -182,8 +221,9 @@ blue     = (   0,   0, 255)
 
 
 def main():
-    keyboard = KeyboardController()
-    view = View()
+    event_manager = EventManager()
+    keyboard = KeyboardController(event_manager)
+    view = View(event_manager)
     while True:
         keyboard.notify(TickEvent())
         view.notify(TickEvent())
