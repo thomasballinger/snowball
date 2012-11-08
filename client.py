@@ -97,38 +97,42 @@ class StateController:
                 s.timeout(TICK_TIME - t + lt)
                 try:
                     players, _ = s.recvfrom(MAX)
-                    if len(players) > 2:
-                        game_master = True
-                        players = json.loads(players)[1]
-                    players = int(players)
                 except socket.timeout:
-                    print """Can't seem to connect to the server...
-                             1. Is it on?
-                             2. Do you have the correct IP address for the server?
-                             (Or you could just try again?)"""
-            lt = t
+                    print "server didn't respond"
+                    clock.tick(32)
+                    lt = t
+                    continue
+            if len(players) > 2:
+                instruction, players = json.loads(players)
+                if instruction == 'MASTER':
+                    game_master = True
+            players = int(players)
             clock.tick(32)
+            lt = t
+            event = StartEvent()
+            self.notify(event)
 
         while self.start and self.keep_going:
-            print 'connecting to server...'
-            msg = 'h', 'i' * random.randint(2, 20)
-            s.sendto(msg, (SERVER, PORT))
-            s.settimeout(2)
-            try:
-                server_msg, addr = s.recvfrom(MAX)
-            except socket.timeout:
-                print """Can't seem to connect to the server...
-                         1. Is it on?
-                         2. Do you have the correct IP address for the server?
-                         (Or you could just try again?)"""
-                return
-            if int(server_msg) == (len(msg) - 1):
-                event = StartEvent()
-                self.event_manager.post(event)
-            else:
-                del server_msg
-                print """You have the wrong IP address for the server."""
+            event = StartEvent()
+            self.event_manager.post(event)
+            t = int(round(time.time() * 1000))
+            if TICK_TIME - t + lt > 0:
+                s.timeout(TICK_TIME - t + lt)
+                try:
+                    players, _ = s.recvfrom(MAX)
+                except socket.timeout:
+                    print "server didn't respond"
+                    clock.tick(32)
+                    lt = t
+                    continue
+            if len(players) > 2:
+                instruction, players = json.loads(players)
+            players = int(players)
             clock.tick(32)
+            lt = t
+            if instruction == 'START':
+                event = TickEvent()
+                self.notify(event)
 
         while self.keep_going:
             event = TickEvent()
@@ -261,8 +265,6 @@ class View:
                 text2_rectangle.centerx = self.window.get_rect().centerx
                 text2_rectangle.centery = 400
                 self.window.blit(text2, text2_rectangle)
-
-
 
             pygame.display.flip()
 
