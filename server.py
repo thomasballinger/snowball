@@ -66,6 +66,9 @@ def dampen(initial, dampenAmount):
     result = sticky_sum(initial, dampenAmount)
     return(int(result))
 
+def current_time():
+    return(int(round(time.time() * 100)))
+
 #  Classes  #
 
 class Event:
@@ -222,9 +225,8 @@ class StateController:
     def __init__(self, eventManager):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
-        self.connect = True
         self.master = None
-        self.start = True
+        self.connect = True
         self.keep_going = True
 
     def run(self):
@@ -236,8 +238,9 @@ class StateController:
         global clients
         global IDs
         global clientID
+        global lt
 
-        while self.connect and self.start and self.keep_going:
+        while self.connect and self.keep_going:
             msg, addr = s.recvfrom(MAX)
             msg = json.loads(msg)
             if not self.master:
@@ -263,11 +266,7 @@ class StateController:
             msg = len(clients.keys())
             s.sendto(msg, (addr, PORT))
  
-        while self.start and self.keep_going:
-           
         while self.keep_going:
-            keys_pressed, addr = s.recvfrom(MAX)
-            keys_pressed = json.loads(keys_pressed)
             #count = 0.00
             #while count < 1.0/30:
             #    keys_pressed, addr = s.recvfrom(MAX)
@@ -278,22 +277,27 @@ class StateController:
             #print addr
             #print keys_pressed
             # TickEvent starts events for the general game
-            if self.start:
-                event = StartEvent()
-            else:
-                event = TickEvent()
+            event = TickEvent()
             self.event_manager.post(event)
-            global lt
-            t = int(round(time.time() * 1000))
-            if TICK_TIME - t + lt > 0:
-                time.sleep(float(TICK_TIME - t + lt)/1000)
-            lt = t
-
+            t = current_time()
+            for client in clients.keys():
+                clients[client] = ''
+            while TICK_TIME - t + lt > 0:
+                s.timeout(TICK_TIME - t + lt)
+                try:
+                    keys_pressed, addr = s.recvfrom(MAX)
+                except socket.timeout:
+                    break
+                keys_pressed = json.loads(keys_pressed)
+                if client in clients.keys():
+                    clients[client] = keys_pressed
+                t = current_time()
+                    
     def notify(self, event):
         if isinstance(event, QuitEvent):
             self.keep_going = False
         elif isinstance(event, TickEvent):
-            self.start = False
+            self.connect = False
 
 
 class ConnectionController:
