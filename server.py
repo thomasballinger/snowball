@@ -1,3 +1,4 @@
+# This is the server side
 import json
 import math
 import pdb
@@ -23,7 +24,7 @@ WIND_ON = False
 WIND_MAX = 5
 X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
 Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
-MINIMUM_SNOWBALL_RADIUS = 3
+MIN_SNOWBALL_R = 3
 MAX_SNOWBALL_SPEED = 20
 IMMUNE_TIME = 2000
 
@@ -113,29 +114,27 @@ class QuitEvent:
 
 
 class Model:
-    def __init__(self, eventManager, snowballs, snowflakes, wind):
+    def __init__(self, eventManager):
         self.event_manager = eventManager
         self.event_manager.register_listener(self)
-        self.snowballs = snowballs
-        self.snowflakes = snowflakes
-        self.wind = wind
 
     def notify(self, event):
         if isinstance(event, TickEvent):
             # Move snowflakes
-            for snowflake in self.snowflakes:
+            for snowflake in snowflakes:
                 snowflake.move(0, -1)
                 snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
             # Move snowballs
             for snowball in snowballs:
                 snowball.wind_move(wind.xSpeed, wind.ySpeed)
-                if keys_pressed:
-                    snowball.control(keys_pressed)
+                for client in clients.values():
+                    if client[1] == snowball.c:
+                        snowball.control(client[0])
 
             wind.change_speed(random.choice(X_WIND), 0)
 
-            quadtree = Quadtree(self.snowflakes)
+            quadtree = Quadtree(snowflakes)
             for region in quadtree.regions():
                 if len(region) == 1:
                     continue
@@ -151,8 +150,8 @@ class Model:
                                     snowflake.r = int(math.sqrt(snowflake.area/math.pi))
                                     other.x, other.y, other.r, other.area, other.true_area = reset()
 
-            for snowball in self.snowballs:
-                for snowflake in self.snowflakes:
+            for snowball in snowballs:
+                for snowflake in snowflakes:
                     if collision(snowball.x, snowball.y, snowball.r,
                                  snowflake.x, snowflake.y, snowflake.r):
                         if snowflake.area >= snowball.area:
@@ -166,7 +165,7 @@ class Model:
                             snowball.r = int(math.sqrt(snowball.area/math.pi))
                             snowflake.x, snowflake.y, snowflake.r, snowflake.area, snowflake.true_area = reset()
 
-                for other in self.snowballs:
+                for other in snowballs:
                     if snowball.x == other.x and snowball.y == other.y:
                         continue
                     if collision(snowball.x, snowball.y, snowball.r,
@@ -179,7 +178,7 @@ class Model:
                             snowball.true_area += other.true_area
                             snowball.r = int(math.sqrt(snowball.area/math.pi))
 
-            for sf in self.snowflakes:
+            for sf in snowflakes:
                 if sf.y < SNOW_Y_MIN or sf.x < SNOW_X_MIN or sf.x > SNOW_X_MAX:
                     sf.x, sf.y, sf.r, sf.area, sf.true_area = reset()
 
@@ -240,12 +239,14 @@ class StateController:
         global clientID
         global lt
 
+        player_cols = [green, blue, red, white, green, blue, red]
+
         while self.connect and self.keep_going:
             msg, addr = s.recvfrom(MAX)
             msg = json.loads(msg)
             if not self.master:
                 if msg[0] == 'SPACE':
-                    clients[addr] = 'MASTER'
+                    clients[addr] = [[], player_cols[0]]
                     #ID = random.choice(IDs)
                     #clientID[addr] = ID
                     #IDs.remove(ID)
@@ -259,13 +260,24 @@ class StateController:
                     self.notify(event)
                     continue
             if addr not in address:
-                clients[addr] = 'SLAVE'
+                clients[addr] = [[], player_cols[len(clients.keys())]]
                 #ID = random.choice(IDs)
                 #clientID[addr] = ID
                 #IDs.remove(ID)
             msg = len(clients.keys())
             s.sendto(msg, (addr, PORT))
- 
+
+        players = len(clients.keys())
+
+        # Snowballs
+        balls = Snowstorm(players, 0, X_MAX, 0, Y_MAX)
+        snowballs = balls.attributes('Snowballs', MIN_SNOWBALL_R, player_cols[:players])
+
+        # Snowflakes
+        flakes = Snowstorm(700, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
+        snowflakes = flakes.attributes('Snowflakes')
+
+
         while self.keep_going:
             #count = 0.00
             #while count < 1.0/30:
@@ -281,16 +293,16 @@ class StateController:
             self.event_manager.post(event)
             t = current_time()
             for client in clients.keys():
-                clients[client] = ''
+                clients[client] = [[], clients[client][1]]
             while TICK_TIME - t + lt > 0:
                 s.timeout(TICK_TIME - t + lt)
                 try:
                     keys_pressed, addr = s.recvfrom(MAX)
                 except socket.timeout:
-                    break
+                    continue
                 keys_pressed = json.loads(keys_pressed)
                 if client in clients.keys():
-                    clients[client] = keys_pressed
+                    clients[client] = [keys_pressed, clients[client][1]]
                 t = current_time()
                     
     def notify(self, event):
@@ -459,7 +471,7 @@ class Snowflake:
 
     def compress(self, amount):
         """Given an amount to compress Snowflake, return compressed area."""
-        minimum_area = MINIMUM_SNOWBALL_RADIUS**2 * math.pi
+        minimum_area = MIN_SNOWBALL_R**2 * math.pi
         result = max(minimum_area, self.area - amount)
         resulting_radius = math.sqrt(result/math.pi)
         self.r = int(resulting_radius)
@@ -587,14 +599,6 @@ green    = (   0, 255,   0)
 red      = ( 255,   0,   0)
 blue     = (   0,   0, 255)
 
-# Snowballs
-balls = Snowstorm(1, 0, X_MAX, 0, Y_MAX)
-snowballs = balls.attributes('Snowballs', MINIMUM_SNOWBALL_RADIUS, [green])
-
-# Snowflakes
-flakes = Snowstorm(700, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
-snowflakes = flakes.attributes('Snowflakes')
-
 # Wind
 wind = Wind(-1,0)
 
@@ -605,7 +609,7 @@ def main():
 
     # Instantiate view and controllers, as well as registering them
     # as listeners in event_manager
-    model = Model(event_manager, snowballs, snowflakes, wind)
+    model = Model(event_manager)
     view = PrintView(event_manager)
     state = StateController(event_manager) 
 
