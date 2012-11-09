@@ -18,8 +18,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 MAX = 65535
 PORT = 1060
 SERVER = '127.0.0.1'
-TICK_TIME = 30
-lt = int(round(time.time() * 1000))
+TICK_TIME = 300
 
 # Server will delegate game_master identity to first client to connect.
 # If True, this client will initialize the start of the game
@@ -88,44 +87,48 @@ class StateController:
         global lt
         global players
         global game_master
-
         while self.connect and self.start and self.keep_going:
             event = ConnectEvent()
             self.event_manager.post(event)
-            t = int(round(time.time() * 1000))
+            t = current_time()
             if TICK_TIME - t + lt > 0:
-                s.timeout(TICK_TIME - t + lt)
+                print (TICK_TIME - t + lt)
+                s.settimeout((TICK_TIME - t + lt)*0.001)
                 try:
-                    players, _ = s.recvfrom(MAX)
+                    print 'listening'
+                    players, abc = s.recvfrom(MAX)
                 except socket.timeout:
-                    print "server didn't respond"
                     clock.tick(32)
                     lt = t
                     continue
-            if len(players) > 2:
+            print 'server responded'
+            if len(str(players)) > 2:
                 instruction, players = json.loads(players)
                 if instruction == 'MASTER':
                     game_master = True
-            players = int(players)
+                    players = int(players)
+                    event = StartEvent()
+                    self.notify(event)
+            else:
+                players = int(players)
+                event = StartEvent()
+                self.notify(event)
             clock.tick(32)
             lt = t
-            event = StartEvent()
-            self.notify(event)
 
         while self.start and self.keep_going:
             event = StartEvent()
             self.event_manager.post(event)
-            t = int(round(time.time() * 1000))
+            t = current_time()
             if TICK_TIME - t + lt > 0:
-                s.timeout(TICK_TIME - t + lt)
+                s.settimeout((TICK_TIME - t + lt)*0.001)
                 try:
                     players, _ = s.recvfrom(MAX)
                 except socket.timeout:
-                    print "server didn't respond"
                     clock.tick(32)
                     lt = t
                     continue
-            if len(players) > 2:
+            if len(str(players)) > 2:
                 instruction, players = json.loads(players)
             players = int(players)
             clock.tick(32)
@@ -176,6 +179,7 @@ class KeyboardController:
             if pressed[pygame.K_SPACE]:
                 keys_pressed = json.dumps(['SPACE'], separators=(',',':'))
                 s.sendto(keys_pressed, (SERVER, PORT))
+                print 'sent space'
 
         if isinstance(event, StartEvent):
 
@@ -278,7 +282,7 @@ class View:
             self.window.blit(title, title_rectangle)
 
             if game_master:
-                text2 = self.msg.render('hit SPACE to start game', True, blue)
+                text2 = self.msg.render("hit 's' to start game", True, blue)
                 text2_rectangle = text2.get_rect()
                 text2_rectangle.centerx = self.window.get_rect().centerx
                 text2_rectangle.centery = 400
@@ -298,7 +302,11 @@ class View:
 
         if isinstance(event, TickEvent):
 
-            snowstorm, address = s.recvfrom(MAX)
+            s.settimeout(10)
+            try:
+                snowstorm, address = s.recvfrom(MAX)
+            except socket.timeout:
+                print 'Server not responding'
             snowstorm = json.loads(snowstorm)
 
             if len(snowstorm):
@@ -319,6 +327,9 @@ class View:
         if isinstance(event, QuitEvent):
             pass
 
+def current_time():
+    return(int(round(time.time() * 100)))
+
 
 # Define some colors
 black    = (   0,   0,   0)
@@ -334,11 +345,13 @@ pygame.init()
 clock = pygame.time.Clock()
 
 def main():
+    global lt
     event_manager = EventManager()
     keyboard = KeyboardController(event_manager)
     state = StateController(event_manager)
     view = View(event_manager)
 
+    lt = current_time()
     state.run()
 
 main()

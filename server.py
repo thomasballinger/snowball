@@ -129,7 +129,7 @@ class Model:
             for snowball in snowballs:
                 snowball.wind_move(wind.xSpeed, wind.ySpeed)
                 for client in clients.values():
-                    if client[1] == snowball.c:
+                    if client[1] == snowball.color:
                         snowball.control(client[0])
 
             wind.change_speed(random.choice(X_WIND), 0)
@@ -195,16 +195,14 @@ class PrintView:
 
     def notify(self, event):
         
-        if isinstance(event, StartEvent):
-            for addr in address:
-                for ID in clientID:
-                    s.sendto(ID, addr)
+        if isinstance(event, ConnectEvent):
+            print 'ConnectEvent'
             pass
 
         if isinstance(event, TickEvent):
             snowstorm = snowflakes + snowballs
             snowstorm = json.dumps(serialize(snowstorm), separators=(',',':'))
-            for addr in address:
+            for addr in clients.keys():
                 s.sendto(snowstorm, addr)
 
             if event.game_over:
@@ -213,8 +211,6 @@ class PrintView:
         if isinstance(event, QuitEvent):
             print 'Quit Event'
 
-lt = int(round(time.time() * 1000)) 
-addresses = []
 keys_pressed = []
 IDs = [random.randrange(100000, 999999) for i in range(100)]
 IDs = set(IDs)
@@ -232,12 +228,13 @@ class StateController:
 
         s.bind(('127.0.0.1', PORT))
         print 'Listening at', s.getsockname()
-        global address
         global keys_pressed
         global clients
         global IDs
         global clientID
         global lt
+        global snowflakes
+        global snowballs
 
         player_cols = [green, blue, red, white, green, blue, red]
 
@@ -251,21 +248,35 @@ class StateController:
                     #clientID[addr] = ID
                     #IDs.remove(ID)
                     msg = ['MASTER', 1]
-                    s.sendto(msg, (addr, PORT))
+                    msg = json.dumps(msg, separators=(',',':'))
+                    s.sendto(msg, addr)
                     self.master = addr
+                    print 'assigned master'
                     continue
             if addr == self.master:
                 if msg[0] == 'START':
+                    msg = ['START', len(clients.keys())]
+                    msg = json.dumps(msg, separators=(',',':'))
+                    for add in clients.keys():
+                        s.sendto(msg, add)
                     event = TickEvent()
                     self.notify(event)
+                    print 'starting'
+                    break
+                else:
+                    time.sleep(2)
+                    msg = ['MASTER', len(clients.keys())]
+                    msg = json.dumps(msg, separators=(',',':'))
+                    s.sendto(msg, addr)
+                    print 'send to master'
                     continue
-            if addr not in address:
+            if addr not in clients.keys():
                 clients[addr] = [[], player_cols[len(clients.keys())]]
                 #ID = random.choice(IDs)
                 #clientID[addr] = ID
                 #IDs.remove(ID)
-            msg = len(clients.keys())
-            s.sendto(msg, (addr, PORT))
+            msg = str(len(clients.keys()))
+            s.sendto(msg, addr)
 
         players = len(clients.keys())
 
@@ -274,7 +285,7 @@ class StateController:
         snowballs = balls.attributes('Snowballs', MIN_SNOWBALL_R, player_cols[:players])
 
         # Snowflakes
-        flakes = Snowstorm(700, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
+        flakes = Snowstorm(300, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
         snowflakes = flakes.attributes('Snowflakes')
 
 
@@ -289,21 +300,21 @@ class StateController:
             #print addr
             #print keys_pressed
             # TickEvent starts events for the general game
+            lt = current_time()
             event = TickEvent()
             self.event_manager.post(event)
-            t = current_time()
             for client in clients.keys():
                 clients[client] = [[], clients[client][1]]
+            t = current_time()
             while TICK_TIME - t + lt > 0:
-                s.timeout(TICK_TIME - t + lt)
+                s.settimeout((TICK_TIME - t + lt)*0.001)
                 try:
                     keys_pressed, addr = s.recvfrom(MAX)
                 except socket.timeout:
-                    continue
+                    break
                 keys_pressed = json.loads(keys_pressed)
                 if client in clients.keys():
                     clients[client] = [keys_pressed, clients[client][1]]
-                t = current_time()
                     
     def notify(self, event):
         if isinstance(event, QuitEvent):
@@ -601,6 +612,11 @@ blue     = (   0,   0, 255)
 
 # Wind
 wind = Wind(-1,0)
+
+snowflakes = ''
+snowballs = ''
+
+lt = current_time()
 
 # Main function
 def main():
