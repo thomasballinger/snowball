@@ -131,6 +131,7 @@ class Model:
                 for client in clients.values():
                     if client[1] == snowball.color:
                         snowball.control(client[0])
+                        break
 
             wind.change_speed(random.choice(X_WIND), 0)
 
