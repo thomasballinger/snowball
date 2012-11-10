@@ -20,7 +20,10 @@ PORT = 1060
 
 TICK_TIME = 31
 
-IP = sys.argv[1]
+s.connect(('google.com', 0))
+IP = sys.argv[1] if len(sys.argv) > 1 else s.getsockname()[0]
+s.close()
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 WIND_ON = False
 WIND_MAX = 5
@@ -229,7 +232,7 @@ class StateController:
 
     def run(self):
 
-        s.bind(('127.0.0.1', PORT))
+        s.bind((IP, PORT))
         print 'Listening at', s.getsockname()
         global clients
         global IDs
