@@ -215,7 +215,6 @@ class PrintView:
         if isinstance(event, QuitEvent):
             print 'Quit Event'
 
-keys_pressed = []
 IDs = [random.randrange(100000, 999999) for i in range(100)]
 IDs = set(IDs)
 clientID = {}
@@ -232,7 +231,6 @@ class StateController:
 
         s.bind(('127.0.0.1', PORT))
         print 'Listening at', s.getsockname()
-        global keys_pressed
         global clients
         global IDs
         global clientID
@@ -317,8 +315,9 @@ class StateController:
                 except socket.timeout:
                     break
                 keys_pressed = json.loads(keys_pressed)
-                if client in clients.keys():
-                    clients[client] = [keys_pressed, clients[client][1]]
+                for client in clients.keys():
+                    if client == addr:
+                        clients[client] = [keys_pressed, clients[client][1]]
                 t = current_time()
                     
     def notify(self, event):
