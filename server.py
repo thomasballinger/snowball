@@ -269,7 +269,6 @@ class StateController:
                     print 'starting'
                     break
                 else:
-                    time.sleep(2)
                     msg = ['MASTER', len(clients.keys())]
                     msg = json.dumps(msg, separators=(',',':'))
                     s.sendto(msg, addr)
@@ -281,7 +280,8 @@ class StateController:
                 #clientID[addr] = ID
                 #IDs.remove(ID)
             msg = str(len(clients.keys()))
-            s.sendto(msg, addr)
+            for add in clients.keys():
+                s.sendto(msg, add)
 
         players = len(clients.keys())
 
@@ -295,15 +295,6 @@ class StateController:
 
 
         while self.keep_going:
-            #count = 0.00
-            #while count < 1.0/30:
-            #    keys_pressed, addr = s.recvfrom(MAX)
-            #    keys_pressed = json.loads(keys_pressed)
-            #    address += [addr]
-            #    del addr
-            #    time.sleep(0.03)
-            #print addr
-            #print keys_pressed
             # TickEvent starts events for the general game
             lt = current_time()
             event = TickEvent()
