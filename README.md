@@ -59,9 +59,7 @@ terrorizes all the other snowflake denizens. That's about it though.
 
 TODO
 ----
-* Server Client syncing
-* Manage the addition of more clients
-* Add another snowball player :)
 * Polish
-* Some sort of interface
+* Better interface
+* Scoring system/High scores
 * Tons more
