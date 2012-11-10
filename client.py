@@ -93,10 +93,8 @@ class StateController:
             self.event_manager.post(event)
             t = current_time()
             if TICK_TIME - t + lt > 0:
-                print (TICK_TIME - t + lt)
                 s.settimeout((TICK_TIME - t + lt)*0.001)
                 try:
-                    print 'listening'
                     players, abc = s.recvfrom(MAX)
                 except socket.timeout:
                     clock.tick(32)
@@ -180,7 +178,6 @@ class KeyboardController:
             if pressed[pygame.K_SPACE]:
                 keys_pressed = json.dumps(['SPACE'], separators=(',',':'))
                 s.sendto(keys_pressed, (SERVER, PORT))
-                print 'sent space'
 
         if isinstance(event, StartEvent):
 
