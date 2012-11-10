@@ -5,6 +5,7 @@ import pdb
 import pygame
 import pygame.gfxdraw
 import socket
+import sys
 import time
 import weakref
 
@@ -17,7 +18,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 MAX = 65535
 PORT = 1060
-SERVER = '127.0.0.1'
+SERVER = sys.argv[1]
 TICK_TIME = 300
 
 # Server will delegate game_master identity to first client to connect.

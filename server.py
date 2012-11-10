@@ -20,6 +20,8 @@ PORT = 1060
 
 TICK_TIME = 31
 
+IP = sys.argv[1]
+
 WIND_ON = False
 WIND_MAX = 5
 X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
@@ -151,7 +153,7 @@ class Model:
                                     snowflake.r = int(math.sqrt(snowflake.area/math.pi))
                                     other.x, other.y, other.r, other.area, other.true_area = reset()
 
-            for snowball in snowballs:
+            for (index, snowball) in enumerate(snowballs):
                 for snowflake in snowflakes:
                     if collision(snowball.x, snowball.y, snowball.r,
                                  snowflake.x, snowflake.y, snowflake.r):
@@ -172,6 +174,7 @@ class Model:
                     if collision(snowball.x, snowball.y, snowball.r,
                                  other.x, other.y, other.r):
                         if other.area >= snowball.area:
+                            del snowballs[index]
                             self.event_manager.post(TickEvent(game_over=True))
                             return
                         else:
@@ -307,7 +310,7 @@ class StateController:
             for client in clients.keys():
                 clients[client] = [[], clients[client][1]]
             t = current_time()
-            while TICK_TIME - t + lt > 0:
+            while (TICK_TIME - t + lt) > 0:
                 s.settimeout((TICK_TIME - t + lt)*0.001)
                 try:
                     keys_pressed, addr = s.recvfrom(MAX)
@@ -316,6 +319,7 @@ class StateController:
                 keys_pressed = json.loads(keys_pressed)
                 if client in clients.keys():
                     clients[client] = [keys_pressed, clients[client][1]]
+                t = current_time()
                     
     def notify(self, event):
         if isinstance(event, QuitEvent):
