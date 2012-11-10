@@ -19,7 +19,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 MAX = 65535
 PORT = 1060
 SERVER = sys.argv[1]
-TICK_TIME = 10
+TICK_TIME = 15
 
 # Server will delegate game_master identity to first client to connect.
 # If True, this client will initialize the start of the game
@@ -97,7 +97,7 @@ class StateController:
                 try:
                     players, abc = s.recvfrom(MAX)
                 except socket.timeout:
-                    clock.tick(10)
+                    clock.tick(66)
                     lt = t
                     continue
             print 'server responded'
@@ -112,7 +112,7 @@ class StateController:
                 players = int(players)
                 event = StartEvent()
                 self.notify(event)
-            clock.tick(10)
+            clock.tick(66)
             lt = t
 
         while self.start and self.keep_going:
@@ -130,7 +130,7 @@ class StateController:
             if len(str(players)) > 2:
                 instruction, players = json.loads(players)
             players = int(players)
-            clock.tick(10)
+            clock.tick(66)
             lt = t
             if instruction == 'START':
                 event = TickEvent()
@@ -139,7 +139,7 @@ class StateController:
         while self.keep_going:
             event = TickEvent()
             self.event_manager.post(event)
-            clock.tick(10)
+            clock.tick(66)
 
     def notify(self, event):
         if isinstance(event, QuitEvent):
