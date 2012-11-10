@@ -2,6 +2,13 @@ The Game
 ========
 Snowball is a "dog eat dog" game.
 
+Release
+-------
+(0.2) Multiplayer is GO.  
+  
+(0.1) Currently you can play the game as a mutant green snowball that
+terrorizes all the other snowflake denizens. That's about it though.
+
 Installation
 ------------
 What you need to run the server: python, git.  
@@ -49,13 +56,6 @@ Controls
 ARROWS: Movement  
 SPACE : Compress snowball for more speed, at the expense of size  
 ESC   : Quit game
-
-Release
--------
-(0.2) Multiplayer is GO.  
-  
-(0.1) Currently you can play the game as a mutant green snowball that
-terrorizes all the other snowflake denizens. That's about it though.
 
 TODO
 ----
