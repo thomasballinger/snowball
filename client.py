@@ -19,7 +19,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 MAX = 65535
 PORT = 1060
 SERVER = sys.argv[1]
-TICK_TIME = 300
+TICK_TIME = 31
 
 # Server will delegate game_master identity to first client to connect.
 # If True, this client will initialize the start of the game
