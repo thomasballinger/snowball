@@ -73,7 +73,7 @@ def dampen(initial, dampenAmount):
     return(int(result))
 
 def current_time():
-    return(int(round(time.time() * 100)))
+    return(int(round(time.time() * 1000)))
 
 #  Classes  #
 
@@ -161,7 +161,7 @@ class Model:
                     if collision(snowball.x, snowball.y, snowball.r,
                                  snowflake.x, snowflake.y, snowflake.r):
                         if snowflake.area >= snowball.area:
-                            print 'ouch'
+                            del snowballs[index]
                             self.event_manager.post(TickEvent(game_over=True))
                             return
                         else:
@@ -302,6 +302,7 @@ class StateController:
             for client in clients.keys():
                 clients[client] = [[], clients[client][1]]
             t = current_time()
+            print 'receiving keys starting %d' % (t - lt)
             while (TICK_TIME - t + lt) > 0:
                 s.settimeout((TICK_TIME - t + lt)*0.001)
                 try:
@@ -313,7 +314,9 @@ class StateController:
                     if client == addr:
                         clients[client] = [keys_pressed, clients[client][1]]
                 t = current_time()
-                    
+            abc = current_time()
+            print 'tick event over in %d' % (abc - lt)
+                
     def notify(self, event):
         if isinstance(event, QuitEvent):
             self.keep_going = False
