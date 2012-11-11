@@ -9,22 +9,31 @@ import threading
 import time
 import weakref
 
-# socket family is AF_INET, the Internet family of protocols
-# SOCK_DGRAM refers to using UDP (and sending 'datagrams' aka packets)
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#-------------#
+#  Constants  #
+#-------------#
 
-MAX = 65535
-PORT = 1060
-
-#  Global Parameters  #
-
+# Milliseconds per frame
 TICK_TIME = 31
 
+# Set listening IP
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(('google.com', 0))
 IP = sys.argv[1] if len(sys.argv) > 1 else s.getsockname()[0]
 s.close()
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+MAX = 65535
+PORT = 1060
+
+# Model Constants
+X_MAX = 1200
+X_MID = X_MAX // 2
+Y_MAX = 500
+SNOW_X_MAX = X_MAX + 500
+SNOW_X_MIN = -500
+SNOW_Y_MAX = Y_MAX + 300
+SNOW_Y_MIN = -300
 WIND_ON = False
 WIND_MAX = 5
 X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
@@ -32,25 +41,12 @@ Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 MIN_SNOWBALL_R = 3
 MAX_SNOWBALL_SPEED = 20
 IMMUNE_TIME = 2000
-
-# Set the width and height of the screen [width,height]
-
-X_MAX = 1200
-X_MID = X_MAX // 2
-Y_MAX = 500
-
-# Set the area of the snowstorm
-
-SNOW_X_MAX = X_MAX + 500
-SNOW_X_MIN = -500
-SNOW_Y_MAX = Y_MAX + 300
-SNOW_Y_MIN = -300
-
-# Dampening Factors
 X_DAMPEN = 100
 Y_DAMPEN = 500
 
-# Helper Functions
+#--------------------#
+#  Helper Functions  #
+#--------------------#
 
 def sticky_sum(initial, shift):
     """Given an initial number and a shift to add to it, return the zero
@@ -65,7 +61,7 @@ def sticky_sum(initial, shift):
         return(0)
 
 def dampen(initial, dampenAmount):
-    """ Given a initial number and a dampening amount, return the dampened
+    """Given a initial number and a dampening amount, return the dampened
     result as an int."""
     initial_sign = math.copysign(1, initial)
     dampenAmount = math.copysign(dampenAmount, -initial_sign)
@@ -73,9 +69,12 @@ def dampen(initial, dampenAmount):
     return(int(result))
 
 def current_time():
+    """Returns the current time in milliseconds."""
     return(int(round(time.time() * 1000)))
 
+#-----------#
 #  Classes  #
+#-----------#
 
 class Event:
     """Superclass for any event that needs to be sent to the EventManager."""
@@ -125,70 +124,60 @@ class Model:
 
     def notify(self, event):
         if isinstance(event, TickEvent):
-            # Move snowflakes
-            for snowflake in snowflakes:
-                snowflake.move(0, -1)
-                snowflake.wind_move(wind.xSpeed, wind.ySpeed)
 
-            # Move snowballs
-            for snowball in snowballs:
-                snowball.wind_move(wind.xSpeed, wind.ySpeed)
-                for client in clients.values():
-                    if client[1] == snowball.color:
-                        snowball.control(client[0])
-                        break
-
+            # Choose wind
             wind.change_speed(random.choice(X_WIND), 0)
 
+            # Snowflake collision logic
             quadtree = Quadtree(snowflakes)
             for region in quadtree.regions():
-                if len(region) == 1:
+                if len(region) <= 1:
                     continue
-                for snowflake in region:
-                    for other in region:
-                        if snowflake.x == other.x and snowflake.y == other.y:
-                            continue
-                        elif collision(snowflake.x, snowflake.y, snowflake.r,
-                                       other.x, other.y, other.r):
-                                if snowflake.area >= other.area and snowflake.area < 3000: 
-                                    snowflake.area += other.area
-                                    snowflake.true_area += other.true_area
-                                    snowflake.r = int(math.sqrt(snowflake.area/math.pi))
-                                    other.x, other.y, other.r, other.area, other.true_area = reset()
+                for i in range(len(region)-1):
+                    sf = region.pop()
+                    for other_sf in region:
+                        if collision(sf.x, sf.y, sf.r, other_sf.x, other_sf.y, other_sf.r):
+                            if sf.area >= other_sf.area and sf.area < 3000:
+                                absorb(sf, other_sf)
+                                reset(other_sf)
+                            elif sf.area < other_sf.area and other_sf.area < 3000:
+                                absorb(other_sf, sf)
+                                reset(sf)
 
-            for (index, snowball) in enumerate(snowballs):
-                for snowflake in snowflakes:
-                    if collision(snowball.x, snowball.y, snowball.r,
-                                 snowflake.x, snowflake.y, snowflake.r):
-                        if snowflake.area >= snowball.area:
+            # Snowball collision logic and movement
+            for (index, sb) in enumerate(snowballs):
+                for sf in snowflakes:
+                    if collision(sb.x, sb.y, sb.r, sf.x, sf.y, sf.r):
+                        if sf.area >= sb.area:
                             del snowballs[index]
                             self.event_manager.post(TickEvent(game_over=True))
                             return
                         else:
                             print 'nom'
-                            snowball.area += snowflake.area
-                            snowball.true_area += snowflake.true_area
-                            snowball.r = int(math.sqrt(snowball.area/math.pi))
-                            snowflake.x, snowflake.y, snowflake.r, snowflake.area, snowflake.true_area = reset()
-
-                for other in snowballs:
-                    if snowball.x == other.x and snowball.y == other.y:
+                            absorb(sb, sf)
+                            reset(sf)
+                for other_sb in snowballs:
+                    if sb.x == other_sb.x and sb.y == other_sb.y:
                         continue
-                    if collision(snowball.x, snowball.y, snowball.r,
-                                 other.x, other.y, other.r):
-                        if other.area >= snowball.area:
+                    if collision(sb.x, sb.y, sb.r, other_sb.x, other_sb.y, other_sb.r):
+                        if other_sb.area >= sb.area:
                             del snowballs[index]
                             self.event_manager.post(TickEvent(game_over=True))
                             return
                         else:
-                            snowball.area += other.area
-                            snowball.true_area += other.true_area
-                            snowball.r = int(math.sqrt(snowball.area/math.pi))
+                            absorb(sb, other_sb)
+                sb.wind_move(wind.xSpeed, wind.ySpeed)
+                for client in clients.values():
+                    if client[1] == sb.color:
+                        sb.control(client[0])
+                        break
 
+            # Snowflake movement and reset logic
             for sf in snowflakes:
                 if sf.y < SNOW_Y_MIN or sf.x < SNOW_X_MIN or sf.x > SNOW_X_MAX:
-                    sf.x, sf.y, sf.r, sf.area, sf.true_area = reset()
-
+                    reset(sf)
+                sf.move(0, -1)
+                sf.wind_move(wind.xSpeed, wind.ySpeed)
             # TODO: Known bugs:
             # Not yet written for multiplayer, just laid foundation/frameworks
             # You lose screen
@@ -209,6 +198,7 @@ class PrintView:
         if isinstance(event, TickEvent):
             snowstorm = snowflakes + snowballs
             snowstorm = json.dumps(serialize(snowstorm), separators=(',',':'))
+            s.settimeout(300)
             for addr in clients.keys():
                 s.sendto(snowstorm, addr)
 
@@ -290,7 +280,7 @@ class StateController:
         snowballs = balls.attributes('Snowballs', MIN_SNOWBALL_R, player_cols[:players])
 
         # Snowflakes
-        flakes = Snowstorm(300, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
+        flakes = Snowstorm(500, SNOW_X_MIN, SNOW_X_MAX, SNOW_Y_MIN, SNOW_Y_MAX)
         snowflakes = flakes.attributes('Snowflakes')
 
 
@@ -315,7 +305,7 @@ class StateController:
                         clients[client] = [keys_pressed, clients[client][1]]
                 t = current_time()
             abc = current_time()
-            print 'tick event over in %d' % (abc - lt)
+            #print 'tick event over in %d' % (abc - lt)
                 
     def notify(self, event):
         if isinstance(event, QuitEvent):
@@ -338,7 +328,7 @@ class ConnectionController:
 
 
 class Quadtree:
-    def __init__(self, snowObjects, maxLevels=6, bounds=None):
+    def __init__(self, snowObjects, maxLevels=5, bounds=None):
         # Subregions start empty
         self.nw = self.ne = self.se = self.sw = None
 
@@ -575,6 +565,11 @@ class Wind:
 
 #  Functions  #
 
+def absorb(objOne, objTwo):
+    objOne.area += objTwo.area
+    objOne.true_area += objTwo.true_area
+    objOne.r = int(math.sqrt(objOne.area/math.pi))
+
 def collision(xOne, yOne, rOne, xTwo, yTwo, rTwo):
     """Given size and space parameters for each object, return boolean for
        whether collision occurs"""
@@ -585,13 +580,13 @@ def collision(xOne, yOne, rOne, xTwo, yTwo, rTwo):
     else:
         return(False)
 
-def reset():
+def reset(obj):
     """Return a tuple of x, y, r values to reset a snowflake."""
     x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
     y = random.randrange(SNOW_Y_MAX, SNOW_Y_MAX + 200)
     r = random.randrange(1, 8)
     area = math.pi * r**2
-    return((x, y, r, area, area))
+    obj.x, obj.y, obj.r, obj.area, obj.true_area = x, y, r, area, area
 
 def serialize(snowstorm):
     out = []

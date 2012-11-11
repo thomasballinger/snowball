@@ -234,8 +234,9 @@ class KeyboardController:
                 if pressed[pygame.K_SPACE]:
                     keys_pressed += ['SPACE']
 
-                keys_pressed = json.dumps(keys_pressed, separators=(',',':'))
-                s.sendto(keys_pressed, (SERVER, PORT))
+                if keys_pressed:
+                    keys_pressed = json.dumps(keys_pressed, separators=(',',':'))
+                    s.sendto(keys_pressed, (SERVER, PORT))
 
 
 
