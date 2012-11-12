@@ -5,18 +5,18 @@ dodging larger snowballs, in an effort to be the last snowball standing.
 
 ![alt
 text](https://github.com/stoneG/snowball/tree/master/images/TWO-1.png "Two players on
-Ubuntu 12.04")
+Ubuntu 12.04")  
 ![alt
-text](https://github.com/stoneG/snowball/tree/master/images/TWO-2.png "Growing larger...")
+text](https://github.com/stoneG/snowball/tree/master/images/TWO-2.png "Growing larger...")  
 ![alt
 text](https://github.com/stoneG/snowball/tree/master/images/TWO-3.png "Looks like green
-didn't make it")
+didn't make it")  
 ![alt
 text](https://github.com/stoneG/snowball/tree/master/images/THREE-1.png "Three players on
-OSX 10.8")
+OSX 10.8")  
 ![alt
 text](https://github.com/stoneG/snowball/tree/master/images/THREE-2.png "Stoplight
-formation")
+formation")  
 ![alt
 text](https://github.com/stoneG/snowball/tree/master/images/THREE-3.png "What's gonna
 happen?")
