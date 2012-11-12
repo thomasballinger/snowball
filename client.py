@@ -108,6 +108,7 @@ class StateController:
                     event = StartEvent()
                     self.notify(event)
             else:
+                _, players = json.loads(players)
                 players = int(players)
                 event = StartEvent()
                 self.notify(event)
