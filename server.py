@@ -282,7 +282,8 @@ class StateController:
                     continue
             if addr not in clients.keys():
                 clients[addr] = [[], player_cols[len(clients.keys())]]
-            msg = str(len(clients.keys()))
+            msg = ['a', len(clients.keys())]
+            msg = json.dumps(msg, separators(',',':'))
             for add in clients.keys():
                 s.sendto(msg, add)
 
