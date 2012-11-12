@@ -193,6 +193,7 @@ class Model:
 
             # Snowball logic and movement
             for (index, sb) in enumerate(snowballs):
+                sb.calculate_speed()
                 if sb.out_of_bounds(0, X_MAX, 0, Y_MAX):
                     del snowballs[index]
                     self.event_manager.post(TickEvent(game_over=True))
@@ -281,7 +282,6 @@ class StateController:
                 else:
                     msg = ['MASTER', len(clients.keys())]
                     msg = json.dumps(msg, separators=(',',':'))
-                    s.sendto(msg, addr)
                     s.sendto(msg, addr)
                     print 'send to master'
                     continue
@@ -455,6 +455,10 @@ class Snowflake:
 
     def right(self):
         return(self.x + self.r)
+
+    def calculate_speed(self):
+        limit = min(MAX_SNOWBALL_SPEED, int(self.true_area // (2 * self.area)))
+        self.speed = max(1, limit)
 
     def move(self, x, y):
         """Move x and y position of Snowflake."""
