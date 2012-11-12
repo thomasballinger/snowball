@@ -1,11 +1,31 @@
 The Game
 ========
-Snowball is a "dog eat dog" game.
+Snowball is a "dog eat dog" game. Players maneuver a snowball across the sky,
+dodging larger snowballs, in an effort to be the last snowball standing.
+
+![alt
+text](https://github.com/stoneG/snowball/images/TWO-1.png "Two players on
+Ubuntu 12.04")
+![alt
+text](https://github.com/stoneG/snowball/images/TWO-2.png "Growing larger...")
+![alt
+text](https://github.com/stoneG/snowball/images/TWO-3.png "Looks like green
+didn't make it")
+![alt
+text](https://github.com/stoneG/snowball/images/THREE-1.png "Three players on
+OSX 10.8")
+![alt
+text](https://github.com/stoneG/snowball/images/THREE-2.png "Stoplight
+formation")
+![alt
+text](https://github.com/stoneG/snowball/images/THREE-3.png "What's gonna
+happen?")
 
 Release
 -------
+(0.3) Optimized some server calculations, and the game now supports up to
+5 players, though YMMV depending on your network connection.  
 (0.2) Multiplayer is GO.  
-  
 (0.1) Currently you can play the game as a mutant green snowball that
 terrorizes all the other snowflake denizens. That's about it though.
 
