@@ -47,6 +47,10 @@ IMMUNE_TIME = 2000
 X_DAMPEN = 100
 Y_DAMPEN = 500
 
+# key:value -> (Client IP, Client Port):[[keys pressed], color]
+clients = {}
+
+
 #--------------------#
 #  Helper Functions  #
 #--------------------#
@@ -221,6 +225,7 @@ class PrintView:
 
         if isinstance(event, TickEvent):
             snowstorm = serialize(snowflakes, True) + serialize(snowballs, False)
+            snowstorm = ['START', snowstorm]
             snowstorm = json.dumps(snowstorm, separators=(',',':'))
             s.settimeout(300)
             for addr in clients.keys():
@@ -232,7 +237,6 @@ class PrintView:
         if isinstance(event, QuitEvent):
             print 'Quit Event'
 
-clients = {}
 class StateController:
     def __init__(self, eventManager):
         self.event_manager = eventManager
@@ -283,9 +287,9 @@ class StateController:
                     continue
             if addr not in clients.keys():
                 clients[addr] = [[], player_cols[len(clients.keys())]]
-            msg = str(len(clients.keys()))
-            #msg = ['a', len(clients.keys())]
-            #msg = json.dumps(msg, separators=(',',':'))
+            #msg = str(len(clients.keys()))
+            msg = ['a', len(clients.keys())]
+            msg = json.dumps(msg, separators=(',',':'))
             for add in clients.keys():
                 s.sendto(msg, add)
 

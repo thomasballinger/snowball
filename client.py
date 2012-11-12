@@ -89,56 +89,46 @@ class StateController:
         global players
         global game_master
         while self.connect and self.start and self.keep_going:
+            lt = current_time()
             event = ConnectEvent()
             self.event_manager.post(event)
             t = current_time()
             if TICK_TIME - t + lt > 0:
                 s.settimeout((TICK_TIME - t + lt)*0.001)
                 try:
-                    players, abc = s.recvfrom(MAX)
+                    msg, _ = s.recvfrom(MAX)
                 except socket.timeout:
-                    clock.tick(32)
-                    lt = t
+                    t = current_time()
                     continue
-            if len(str(players)) > 2:
-                instruction, players = json.loads(players)
-                if instruction == 'MASTER':
-                    game_master = True
-                    players = int(players)
-                    event = StartEvent()
-                    self.notify(event)
-            else:
-                players = int(players)
-                event = StartEvent()
-                self.notify(event)
-            clock.tick(32)
-            lt = t
+            instruction, players = json.loads(msg)
+            if instruction == 'MASTER':
+                game_master = True
+            players = int(players)
+            event = StartEvent()
+            self.notify(event)
 
         while self.start and self.keep_going:
+            lt = current_time()
             event = StartEvent()
             self.event_manager.post(event)
             t = current_time()
             if TICK_TIME - t + lt > 0:
                 s.settimeout((TICK_TIME - t + lt)*0.001)
                 try:
-                    players, _ = s.recvfrom(MAX)
+                    msg, _ = s.recvfrom(MAX)
                 except socket.timeout:
-                    clock.tick(32)
-                    lt = t
+                    t = current_time()
                     continue
-            if len(str(players)) > 2:
-                instruction, players = json.loads(players)
-            players = int(players)
-            clock.tick(32)
-            lt = t
+            instruction, players = json.loads(msg)
             if instruction == 'START':
                 event = TickEvent()
                 self.notify(event)
+            else:
+                players = int(players)
 
         while self.keep_going:
             event = TickEvent()
             self.event_manager.post(event)
-            clock.tick(32)
 
     def notify(self, event):
         if isinstance(event, QuitEvent):
@@ -303,7 +293,7 @@ class View:
             s.settimeout((TICK_TIME)*0.001)
             try:
                 snowstorm, address = s.recvfrom(MAX)
-                snowstorm = json.loads(snowstorm)
+                _, snowstorm = json.loads(snowstorm)
             except socket.timeout:
                 #print 'Server not responding'
                 return
