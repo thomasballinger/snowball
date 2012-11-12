@@ -18,8 +18,11 @@ TICK_TIME = 31
 
 # Set listening IP
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect(('google.com', 0))
-IP = sys.argv[1] if len(sys.argv) > 1 else s.getsockname()[0]
+try:
+    s.connect(('google.com', 0))
+    IP = sys.argv[1] if len(sys.argv) > 1 else s.getsockname()[0]
+except socket.gaierror:
+    IP = sys.argv[1] if len(sys.argv) > 1 else 'You are not connected to the internet'
 s.close()
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -71,6 +74,48 @@ def dampen(initial, dampenAmount):
 def current_time():
     """Returns the current time in milliseconds."""
     return(int(round(time.time() * 1000)))
+
+def absorb(objOne, objTwo):
+    """objOne absorbs the area of objTwo, void return"""
+    objOne.area += objTwo.area
+    objOne.true_area += objTwo.true_area
+    objOne.r = int(math.sqrt(objOne.area/math.pi))
+
+def collision(xOne, yOne, rOne, xTwo, yTwo, rTwo):
+    """Given size and space parameters for each object, return boolean for
+       whether collision occurs"""
+    origin_distance = math.sqrt((xOne - xTwo)**2 + (yOne - yTwo)**2)
+    collision_distance = rOne + rTwo
+    if origin_distance <= collision_distance:
+        return(True)
+    else:
+        return(False)
+
+def reset(obj):
+    """Return a tuple of x, y, r values to reset a snowflake."""
+    x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
+    y = random.randrange(SNOW_Y_MAX, SNOW_Y_MAX + 200)
+    r = random.randrange(1, 8)
+    area = math.pi * r**2
+    obj.x, obj.y, obj.r, obj.area, obj.true_area = x, y, r, area, area
+
+def serialize(snowstorm, allWhite=False):
+    """Return a list of snow object attributes for sending as a JSON."""
+    out = []
+    if allWhite:
+        for sf in snowstorm:
+            x = sf.x
+            y = sf.y
+            r = sf.r
+            out.append([x, y, r, []])
+    else:
+        for sb in snowstorm:
+            x = sb.x
+            y = sb.y
+            r = sb.r
+            c = sb.color
+            out.append([x, y, r, c])
+    return(out)
 
 #-----------#
 #  Classes  #
@@ -128,44 +173,26 @@ class Model:
             # Choose wind
             wind.change_speed(random.choice(X_WIND), 0)
 
-            # Snowflake collision logic
-            quadtree = Quadtree(snowflakes)
+            # Snowstorm collision logic (only runs in the area of the screen+20px)
+            quadtree = Quadtree(snowflakes+snowballs, bounds=(-20,X_MAX+20,Y_MAX+20,-20))
             for region in quadtree.regions():
-                if len(region) <= 1:
-                    continue
                 for i in range(len(region)-1):
                     sf = region.pop()
                     for other_sf in region:
                         if collision(sf.x, sf.y, sf.r, other_sf.x, other_sf.y, other_sf.r):
-                            if sf.area >= other_sf.area and sf.area < 3000:
+                            if sf.area >= other_sf.area:
                                 absorb(sf, other_sf)
                                 reset(other_sf)
-                            elif sf.area < other_sf.area and other_sf.area < 3000:
+                            else:
                                 absorb(other_sf, sf)
                                 reset(sf)
 
-            # Snowball collision logic and movement
+            # Snowball logic and movement
             for (index, sb) in enumerate(snowballs):
-                for sf in snowflakes:
-                    if collision(sb.x, sb.y, sb.r, sf.x, sf.y, sf.r):
-                        if sf.area >= sb.area:
-                            del snowballs[index]
-                            self.event_manager.post(TickEvent(game_over=True))
-                            return
-                        else:
-                            print 'nom'
-                            absorb(sb, sf)
-                            reset(sf)
-                for other_sb in snowballs:
-                    if sb.x == other_sb.x and sb.y == other_sb.y:
-                        continue
-                    if collision(sb.x, sb.y, sb.r, other_sb.x, other_sb.y, other_sb.r):
-                        if other_sb.area >= sb.area:
-                            del snowballs[index]
-                            self.event_manager.post(TickEvent(game_over=True))
-                            return
-                        else:
-                            absorb(sb, other_sb)
+                if sb.out_of_bounds(0, X_MAX, 0, Y_MAX):
+                    del snowballs[index]
+                    self.event_manager.post(TickEvent(game_over=True))
+                    return
                 sb.wind_move(wind.xSpeed, wind.ySpeed)
                 for client in clients.values():
                     if client[1] == sb.color:
@@ -179,9 +206,7 @@ class Model:
                 sf.move(0, -1)
                 sf.wind_move(wind.xSpeed, wind.ySpeed)
             # TODO: Known bugs:
-            # Not yet written for multiplayer, just laid foundation/frameworks
             # You lose screen
-            # Snowball has to be "eliminated" upon game over, currently just not drawn
 
 
 class PrintView:
@@ -192,12 +217,11 @@ class PrintView:
     def notify(self, event):
         
         if isinstance(event, ConnectEvent):
-            print 'ConnectEvent'
             pass
 
         if isinstance(event, TickEvent):
-            snowstorm = snowflakes + snowballs
-            snowstorm = json.dumps(serialize(snowstorm), separators=(',',':'))
+            snowstorm = serialize(snowflakes, True) + serialize(snowballs, False)
+            snowstorm = json.dumps(snowstorm, separators=(',',':'))
             s.settimeout(300)
             for addr in clients.keys():
                 s.sendto(snowstorm, addr)
@@ -208,9 +232,6 @@ class PrintView:
         if isinstance(event, QuitEvent):
             print 'Quit Event'
 
-IDs = [random.randrange(100000, 999999) for i in range(100)]
-IDs = set(IDs)
-clientID = {}
 clients = {}
 class StateController:
     def __init__(self, eventManager):
@@ -225,8 +246,6 @@ class StateController:
         s.bind((IP, PORT))
         print 'Listening at', s.getsockname()
         global clients
-        global IDs
-        global clientID
         global lt
         global snowflakes
         global snowballs
@@ -239,9 +258,6 @@ class StateController:
             if not self.master:
                 if msg[0] == 'SPACE':
                     clients[addr] = [[], player_cols[0]]
-                    #ID = random.choice(IDs)
-                    #clientID[addr] = ID
-                    #IDs.remove(ID)
                     msg = ['MASTER', 1]
                     msg = json.dumps(msg, separators=(',',':'))
                     s.sendto(msg, addr)
@@ -266,9 +282,6 @@ class StateController:
                     continue
             if addr not in clients.keys():
                 clients[addr] = [[], player_cols[len(clients.keys())]]
-                #ID = random.choice(IDs)
-                #clientID[addr] = ID
-                #IDs.remove(ID)
             msg = str(len(clients.keys()))
             for add in clients.keys():
                 s.sendto(msg, add)
@@ -292,7 +305,7 @@ class StateController:
             for client in clients.keys():
                 clients[client] = [[], clients[client][1]]
             t = current_time()
-            print 'receiving keys starting %d' % (t - lt)
+            #print 'receiving keys starting %d' % (t - lt)
             while (TICK_TIME - t + lt) > 0:
                 s.settimeout((TICK_TIME - t + lt)*0.001)
                 try:
@@ -447,6 +460,10 @@ class Snowflake:
             self.x += dampen(xSpeed, self.true_area / X_DAMPEN)
             self.y += dampen(ySpeed, self.true_area / Y_DAMPEN)
 
+    def out_of_bounds(self, xMin, xMax, yMin, yMax):
+        if self.x < xMin or self.x > xMax or self.y < yMin or self.y > yMax:
+            return(True)
+
     def distance_from(self, position):
         """Distance from Snowflake to another [x, y] position"""
         distance = math.sqrt((self.x - position[0])**2
@@ -564,39 +581,6 @@ class Wind:
         return(dampen(wind.speed, obj.r // 5))
 
 #  Functions  #
-
-def absorb(objOne, objTwo):
-    objOne.area += objTwo.area
-    objOne.true_area += objTwo.true_area
-    objOne.r = int(math.sqrt(objOne.area/math.pi))
-
-def collision(xOne, yOne, rOne, xTwo, yTwo, rTwo):
-    """Given size and space parameters for each object, return boolean for
-       whether collision occurs"""
-    origin_distance = math.sqrt((xOne - xTwo)**2 + (yOne - yTwo)**2)
-    collision_distance = rOne + rTwo
-    if origin_distance <= collision_distance:
-        return(True)
-    else:
-        return(False)
-
-def reset(obj):
-    """Return a tuple of x, y, r values to reset a snowflake."""
-    x = random.randrange(SNOW_X_MIN, SNOW_X_MAX)
-    y = random.randrange(SNOW_Y_MAX, SNOW_Y_MAX + 200)
-    r = random.randrange(1, 8)
-    area = math.pi * r**2
-    obj.x, obj.y, obj.r, obj.area, obj.true_area = x, y, r, area, area
-
-def serialize(snowstorm):
-    out = []
-    for snow in snowstorm:
-        x = snow.x
-        y = snow.y
-        r = snow.r
-        c = snow.color
-        out.append([x, y, r, c])
-    return(out)
 
 
 # Define some colors

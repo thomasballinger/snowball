@@ -100,7 +100,6 @@ class StateController:
                     clock.tick(32)
                     lt = t
                     continue
-            print 'server responded'
             if len(str(players)) > 2:
                 instruction, players = json.loads(players)
                 if instruction == 'MASTER':
@@ -301,16 +300,19 @@ class View:
 
         if isinstance(event, TickEvent):
 
-            s.settimeout(10)
+            s.settimeout((TICK_TIME)*0.001)
             try:
                 snowstorm, address = s.recvfrom(MAX)
+                snowstorm = json.loads(snowstorm)
             except socket.timeout:
-                print 'Server not responding'
-            snowstorm = json.loads(snowstorm)
+                #print 'Server not responding'
+                return
 
             if len(snowstorm):
                 for snow in snowstorm:
                     x, y, r, c = snow
+                    if not c:
+                        c = white
                     pygame.gfxdraw.aacircle(self.window, x, y, r, c)
                     pygame.gfxdraw.filled_circle(self.window, x, y, r, c)
 
