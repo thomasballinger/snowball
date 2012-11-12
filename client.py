@@ -93,7 +93,8 @@ class StateController:
             self.event_manager.post(event)
             t = current_time()
             if TICK_TIME - t + lt > 0:
-                s.settimeout((TICK_TIME - t + lt)*0.001)
+                #s.settimeout((TICK_TIME - t + lt)*0.001)
+                s.settimeout(0.09)
                 try:
                     players, abc = s.recvfrom(MAX)
                 except socket.timeout:
@@ -120,7 +121,8 @@ class StateController:
             self.event_manager.post(event)
             t = current_time()
             if TICK_TIME - t + lt > 0:
-                s.settimeout((TICK_TIME - t + lt)*0.001)
+                #s.settimeout((TICK_TIME - t + lt)*0.001)
+                s.settimeout(0.09)
                 try:
                     players, _ = s.recvfrom(MAX)
                 except socket.timeout:
