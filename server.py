@@ -278,12 +278,14 @@ class StateController:
                     msg = ['MASTER', len(clients.keys())]
                     msg = json.dumps(msg, separators=(',',':'))
                     s.sendto(msg, addr)
+                    s.sendto(msg, addr)
                     print 'send to master'
                     continue
             if addr not in clients.keys():
                 clients[addr] = [[], player_cols[len(clients.keys())]]
-            msg = ['a', len(clients.keys())]
-            msg = json.dumps(msg, separators(',',':'))
+            msg = str(len(clients.keys()))
+            #msg = ['a', len(clients.keys())]
+            #msg = json.dumps(msg, separators=(',',':'))
             for add in clients.keys():
                 s.sendto(msg, add)
 
