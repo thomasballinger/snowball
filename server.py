@@ -255,7 +255,7 @@ class StateController:
         global snowflakes
         global snowballs
 
-        player_cols = [green, blue, red, white, green, blue, red]
+        player_cols = [green, blue, red, yellow, orchid, white]
 
         while self.connect and self.keep_going:
             msg, addr = s.recvfrom(MAX)
@@ -599,7 +599,9 @@ black    = (   0,   0,   0)
 white    = ( 255, 255, 255)
 green    = (   0, 255,   0)
 red      = ( 255,   0,   0)
-blue     = (   0,   0, 255)
+blue     = (  65, 105, 225)
+yellow   = ( 255, 255,   0)
+orchid   = ( 218, 112, 214)
 
 # Wind
 wind = Wind(-1,0)
