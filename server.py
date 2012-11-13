@@ -39,7 +39,7 @@ SNOW_Y_MAX = Y_MAX + 300
 SNOW_Y_MIN = -300
 GRAVITY_ON = True
 WIND_ON = False
-WIND_MAX = 5
+WIND_MAX = 7
 X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
 Y_WIND = [-2, 1, 1, 0, 0, 0, 0, 1, 1, 2]
 MIN_SNOWBALL_R = 3
@@ -429,12 +429,16 @@ class Game:
             pass
 
 
-class Snowflake:
-    def __init__(self, xPosition, yPosition, radius, speed, color):
+class Entity:
+    def __init__(self, xPosition, yPosition, speed):
         self.x = xPosition
         self.y = yPosition
-        self.r = radius
         self.speed = speed
+
+class Snowflake(Entity):
+    def __init__(self, xPosition, yPosition, radius, speed, color):
+        Entity.__init__(self, xPosition, yPosition, speed)
+        self.r = radius
         self.color = color
         self.area = math.pi * self.r**2
         self.true_area = self.area # Area if never compressed
@@ -442,8 +446,8 @@ class Snowflake:
     def __str__(self):
         return('(%d, %d)' % (self.x, self.y))
 
-    def position(self):
-        return([self.xPosition, self.yPosition])
+    #def position(self):
+    #    return([self.xPosition, self.yPosition])
 
     def top(self):
         return(self.y - self.r) 
@@ -473,22 +477,11 @@ class Snowflake:
         if GRAVITY_ON:
             self.y += dampen(ySpeed, self.true_area / Y_DAMPEN)
 
-    def out_of_bounds(self, xMin, xMax, yMin, yMax):
-        if self.x < xMin or self.x > xMax or self.y < yMin or self.y > yMax:
-            return(True)
-
     def distance_from(self, position):
         """Distance from Snowflake to another [x, y] position"""
         distance = math.sqrt((self.x - position[0])**2
                              + (self.y - position[1])**2)
         return(distance)
-
-    def resize(self, amount):
-        """Given amount to change radius, return radius sticky at 1."""
-        if (self.r + amount) > 1:
-            self.r + amount
-        else:
-            self.r == 1 # Cannot resize to nothing
 
     def recolor(self, newColor):
         # Make super colors later maybe
@@ -501,19 +494,16 @@ class Snowflake:
         else:
             self.speed = 1
 
-    def compress(self, amount):
-        """Given an amount to compress Snowflake, return compressed area."""
-        minimum_area = MIN_SNOWBALL_R**2 * math.pi
-        result = max(minimum_area, self.area - amount)
-        resulting_radius = math.sqrt(result/math.pi)
-        self.r = int(resulting_radius)
-        self.area = int(result)
-
     def draw(self, screen, antialias=False):
         """Draw snowflake on screen."""
         if antialias:
             pygame.gfxdraw.aacircle(screen, self.x, self.y, self.r, self.color)
         pygame.draw.circle(screen, self.color, [self.x, self.y], self.r)
+
+
+class Snowball(Snowflake):
+    def __init__(self, xPosition, yPosition, radius, speed, color):
+        Snowflake.__init__(self, xPosition, yPosition, radius, speed, color)
 
     def control(self, keysPressed):
         """Given a list of keysPressed, alter Snowflake's attributes."""
@@ -534,7 +524,26 @@ class Snowflake:
 
         if 'RIGHT' in keysPressed:
             self.move(self.speed, 0)
-        
+
+    def compress(self, amount):
+        """Given an amount to compress Snowflake, return compressed area."""
+        minimum_area = MIN_SNOWBALL_R**2 * math.pi
+        result = max(minimum_area, self.area - amount)
+        resulting_radius = math.sqrt(result/math.pi)
+        self.r = int(resulting_radius)
+        self.area = int(result)
+
+    def out_of_bounds(self, xMin, xMax, yMin, yMax):
+        if self.x < xMin or self.x > xMax or self.y < yMin or self.y > yMax:
+            return(True)
+
+    def resize(self, amount):
+        """Given amount to change radius, return radius sticky at 1."""
+        if (self.r + amount) > 1:
+            self.r + amount
+        else:
+            self.r == 1 # Cannot resize to nothing
+
 
 class Snowstorm:
     def __init__(self, numberOfSnowflakes, xMin, xMax, yMin, yMax):
@@ -560,7 +569,7 @@ class Snowstorm:
                 x = (self.xMax * (i + 1)) / (self.intensity + 1)
                 y = (self.yMax * (i + 1)) / (self.intensity + 1)
                 r = playerRadius
-                attrs.append(Snowflake(x, y, r, 1, playerColors[i]))
+                attrs.append(Snowball(x, y, r, 1, playerColors[i]))
             return(attrs)
 
 
@@ -591,7 +600,7 @@ class Wind:
         return(transition[i])
 
     def effect_on(self, obj):
-        return(dampen(wind.speed, obj.r // 5))
+        return(dampen(wind.speed, obj.r // 2))
 
 #  Functions  #
 
