@@ -148,14 +148,14 @@ class KeyboardController:
 
         quit = None
 
+        # Quitting
+        for game_event in pygame.event.get():
+            if game_event.type == pygame.QUIT:
+                quit = QuitEvent()
+
+        pressed = pygame.key.get_pressed()
+
         if isinstance(event, ConnectEvent):
-
-            # Quitting
-            for game_event in pygame.event.get():
-                if game_event.type == pygame.QUIT:
-                    quit = QuitEvent()
-
-            pressed = pygame.key.get_pressed()
 
             if pressed[pygame.K_ESCAPE]:
                 quit = QuitEvent()
@@ -169,13 +169,6 @@ class KeyboardController:
                 s.sendto(keys_pressed, (SERVER, PORT))
 
         if isinstance(event, StartEvent):
-
-            # Quitting
-            for game_event in pygame.event.get():
-                if game_event.type == pygame.QUIT:
-                    quit = QuitEvent()
-
-            pressed = pygame.key.get_pressed()
 
             if pressed[pygame.K_ESCAPE]:
                 quit = QuitEvent()
@@ -191,12 +184,6 @@ class KeyboardController:
 
         if isinstance(event, TickEvent):
 
-            # Quitting
-            for game_event in pygame.event.get():
-                if game_event.type == pygame.QUIT:
-                    quit = QuitEvent()
-
-            pressed = pygame.key.get_pressed()
             keys_pressed = []
 
             if pressed[pygame.K_ESCAPE]:

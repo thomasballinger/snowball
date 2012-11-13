@@ -37,6 +37,7 @@ SNOW_X_MAX = X_MAX + 500
 SNOW_X_MIN = -500
 SNOW_Y_MAX = Y_MAX + 300
 SNOW_Y_MIN = -300
+GRAVITY_ON = True
 WIND_ON = False
 WIND_MAX = 5
 X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
@@ -45,7 +46,7 @@ MIN_SNOWBALL_R = 3
 MAX_SNOWBALL_SPEED = 20
 IMMUNE_TIME = 2000
 X_DAMPEN = 100
-Y_DAMPEN = 500
+Y_DAMPEN = 100
 
 # key:value -> (Client IP, Client Port):[[keys pressed], color]
 clients = {}
@@ -198,7 +199,7 @@ class Model:
                     del snowballs[index]
                     self.event_manager.post(TickEvent(game_over=True))
                     return
-                sb.wind_move(wind.xSpeed, wind.ySpeed)
+                #sb.nature_move(wind.xSpeed, gravity.ySpeed)
                 for client in clients.values():
                     if client[1] == sb.color:
                         sb.control(client[0])
@@ -209,7 +210,7 @@ class Model:
                 if sf.y < SNOW_Y_MIN or sf.x < SNOW_X_MIN or sf.x > SNOW_X_MAX:
                     reset(sf)
                 sf.move(0, -1)
-                sf.wind_move(wind.xSpeed, wind.ySpeed)
+                sf.nature_move(wind.xSpeed, gravity.ySpeed)
             # TODO: Known bugs:
             # You lose screen
 
@@ -465,10 +466,11 @@ class Snowflake:
         self.x += x
         self.y += y
 
-    def wind_move(self, xSpeed, ySpeed):
+    def nature_move(self, xSpeed, ySpeed):
         """Movement to Snowflake caused by wind."""
         if WIND_ON:
             self.x += dampen(xSpeed, self.true_area / X_DAMPEN)
+        if GRAVITY_ON:
             self.y += dampen(ySpeed, self.true_area / Y_DAMPEN)
 
     def out_of_bounds(self, xMin, xMax, yMin, yMax):
@@ -605,6 +607,7 @@ orchid   = ( 218, 112, 214)
 
 # Wind
 wind = Wind(-1,0)
+gravity = Wind(0,-3)
 
 snowflakes = ''
 snowballs = ''
