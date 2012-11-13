@@ -37,7 +37,7 @@ SNOW_X_MAX = X_MAX + 500
 SNOW_X_MIN = -500
 SNOW_Y_MAX = Y_MAX + 300
 SNOW_Y_MIN = -300
-GRAVITY_ON = True
+GRAVITY_ON = False
 WIND_ON = False
 WIND_MAX = 7
 X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
@@ -418,17 +418,6 @@ class Quadtree:
         return(region)
 
 
-class Game:
-    def __init__(self, state):
-        self.state = state
-
-    def change_to(self, state):
-        if state == 'You Lose':
-            pass
-        elif state == 'You Win':
-            pass
-
-
 class Entity:
     def __init__(self, xPosition, yPosition, speed):
         self.x = xPosition
@@ -573,7 +562,7 @@ class Snowstorm:
             return(attrs)
 
 
-class Wind:
+class NatureEffect:
     def __init__(self, xSpeed, ySpeed):
         self.xSpeed, self.ySpeed = xSpeed, ySpeed
 
@@ -602,9 +591,6 @@ class Wind:
     def effect_on(self, obj):
         return(dampen(wind.speed, obj.r // 2))
 
-#  Functions  #
-
-
 # Define some colors
 black    = (   0,   0,   0)
 white    = ( 255, 255, 255)
@@ -615,15 +601,18 @@ yellow   = ( 255, 255,   0)
 orchid   = ( 218, 112, 214)
 
 # Wind
-wind = Wind(-1,0)
-gravity = Wind(0,-3)
+wind = NatureEffect(0,0)
+gravity = NatureEffect(0,-3)
 
 snowflakes = ''
 snowballs = ''
 
 lt = current_time()
 
-# Main function
+#-----------------#
+#  Main function  #
+#-----------------#
+
 def main():
     # Instantiate event_manager
     event_manager = EventManager()
