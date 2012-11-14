@@ -80,21 +80,40 @@ def current_time():
     """Returns the current time in milliseconds."""
     return(int(round(time.time() * 1000)))
 
+def partial_absorb(objOne, objTwo, collidingPixels):
+    """objOne absorbs the area of objTwo, void return"""
+    objTwo.r += int(-collidingPixels)
+    area_loss = objTwo.area - math.pi * objTwo.r**2
+    true_area_loss = objTwo.true_area * (area_loss / objTwo.area)
+    objOne.area, objTwo.area = objOne.area + area_loss, objTwo.area - area_loss
+    objOne.true_area = objOne.true_area + true_area_loss
+    objTwo.true_area = objTwo.true_area - true_area_loss
+    objOne.r = int(math.sqrt(objOne.area/math.pi))
+
 def absorb(objOne, objTwo):
     """objOne absorbs the area of objTwo, void return"""
     objOne.area += objTwo.area
     objOne.true_area += objTwo.true_area
     objOne.r = int(math.sqrt(objOne.area/math.pi))
 
-def collision(xOne, yOne, rOne, xTwo, yTwo, rTwo):
+def collision(objOne, objTwo):
     """Given size and space parameters for each object, return boolean for
        whether collision occurs"""
-    origin_distance = math.sqrt((xOne - xTwo)**2 + (yOne - yTwo)**2)
-    collision_distance = rOne + rTwo
-    if origin_distance <= collision_distance:
-        return(True)
-    else:
-        return(False)
+    origin_distance = math.sqrt((objOne.x - objTwo.x)**2 + (objOne.y - objTwo.y)**2)
+    collision_distance = objOne.r + objTwo.r
+    colliding_pixels = max(0, collision_distance - origin_distance)
+    if origin_distance <= max(objOne.r, objTwo.r):
+        if objOne.area >= objTwo.area:
+            absorb(objOne, objTwo)
+            reset(objTwo)
+        else:
+            absorb(objTwo, objOne)
+            reset(objOne)
+    elif colliding_pixels:
+        if objOne.area >= objTwo.area:
+            partial_absorb(objOne, objTwo, colliding_pixels)
+        else:
+            partial_absorb(objTwo, objOne, colliding_pixels)
 
 def reset(obj):
     """Return a tuple of x, y, r values to reset a snowflake."""
@@ -184,13 +203,7 @@ class Model:
                 for i in range(len(region)-1):
                     sf = region.pop()
                     for other_sf in region:
-                        if collision(sf.x, sf.y, sf.r, other_sf.x, other_sf.y, other_sf.r):
-                            if sf.area >= other_sf.area:
-                                absorb(sf, other_sf)
-                                reset(other_sf)
-                            else:
-                                absorb(other_sf, sf)
-                                reset(sf)
+                        collision(sf, other_sf)
 
             # Snowball logic and movement
             for (index, sb) in enumerate(snowballs):
