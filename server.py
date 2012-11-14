@@ -37,7 +37,7 @@ SNOW_X_MAX = X_MAX + 500
 SNOW_X_MIN = -500
 SNOW_Y_MAX = Y_MAX + 300
 SNOW_Y_MIN = -300
-GRAVITY_ON = False
+GRAVITY_ON = True
 WIND_ON = False
 WIND_MAX = 7
 X_WIND = [-2]*2 + [-1]*20 + [0]*300 + [1]*20 + [2]*2
@@ -230,7 +230,7 @@ class PrintView:
             snowstorm = ['START', snowstorm]
             snowstorm = json.dumps(snowstorm, separators=(',',':'))
             s.settimeout(300)
-            for addr in clients.keys():
+            for addr in clients:
                 s.sendto(snowstorm, addr)
 
             if event.game_over:
@@ -274,7 +274,7 @@ class StateController:
                 if msg[0] == 'START':
                     msg = ['START', len(clients.keys())]
                     msg = json.dumps(msg, separators=(',',':'))
-                    for add in clients.keys():
+                    for add in clients:
                         s.sendto(msg, add)
                     event = TickEvent()
                     self.notify(event)
@@ -286,12 +286,12 @@ class StateController:
                     s.sendto(msg, addr)
                     print 'send to master'
                     continue
-            if addr not in clients.keys():
+            if addr not in clients:
                 clients[addr] = [[], player_cols[len(clients.keys())]]
             #msg = str(len(clients.keys()))
             msg = ['a', len(clients.keys())]
             msg = json.dumps(msg, separators=(',',':'))
-            for add in clients.keys():
+            for add in clients:
                 s.sendto(msg, add)
 
         players = len(clients.keys())
@@ -310,7 +310,7 @@ class StateController:
             lt = current_time()
             event = TickEvent()
             self.event_manager.post(event)
-            for client in clients.keys():
+            for client in clients:
                 clients[client] = [[], clients[client][1]]
             t = current_time()
             #print 'receiving keys starting %d' % (t - lt)
@@ -321,7 +321,7 @@ class StateController:
                 except socket.timeout:
                     break
                 keys_pressed = json.loads(keys_pressed)
-                for client in clients.keys():
+                for client in clients:
                     if client == addr:
                         clients[client] = [keys_pressed, clients[client][1]]
                 t = current_time()
