@@ -310,7 +310,7 @@ class StateController:
             lt = current_time()
             event = TickEvent()
             self.event_manager.post(event)
-            for client in clients:
+            for client in clients.keys():
                 clients[client] = [[], clients[client][1]]
             t = current_time()
             #print 'receiving keys starting %d' % (t - lt)
@@ -321,7 +321,7 @@ class StateController:
                 except socket.timeout:
                     break
                 keys_pressed = json.loads(keys_pressed)
-                for client in clients:
+                for client in clients.keys():
                     if client == addr:
                         clients[client] = [keys_pressed, clients[client][1]]
                 t = current_time()
