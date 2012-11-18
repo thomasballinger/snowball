@@ -1,7 +1,16 @@
-import os
 import socket
 s = socket.socket
 
-os.system('python server.py localhost &')
-os.system('python client.py localhost')
+from subprocess import Popen
+
+server = Popen(['python', 'server.py', 'localhost'])
+client = Popen(['python', 'client.py', 'localhost'])
+
+try:
+    raw_input()
+except KeyboardInterrupt:
+    pass
+finally:
+    server.kill()
+    client.kill()
 
