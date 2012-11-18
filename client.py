@@ -28,14 +28,10 @@ players = 0
 
 SCREEN_SIZE = [1200, 500]
 
-class Event:
-    """Superclass for any event that needs to be sent to the EventManager."""
-    def __init__(self):
-        self.name = "Event"
-
-
 class EventManager:
-    """Coordinates communication between Model, View, and Controller."""
+    """Coordinates communication between Model, View, and Controller.
+
+    Calls .notify on each registered listener when .post'ed with an event"""
     def __init__(self):
         self.listeners = weakref.WeakKeyDictionary()
 
@@ -54,26 +50,12 @@ class EventManager:
             # NOTE: if listener was unregistered then it will be gone already
             listener.notify(event)
 
-
-class ConnectEvent:
-    def __init__(self):
-        pass
-
-
-class StartEvent:
-    def __init__(self):
-        pass
-
-
+class ConnectEvent: pass
+class StartEvent: pass
 class TickEvent:
     def __init__(self, game_over=False):
         self.game_over = game_over
-
-
-class QuitEvent:
-    def __init__(self):
-        pass
-
+class QuitEvent: pass
 
 class StateController:
     def __init__(self, eventManager):
@@ -131,21 +113,19 @@ class StateController:
             self.event_manager.post(event)
 
     def notify(self, event):
-        if isinstance(event, QuitEvent):
-            self.keep_going = False
-        if isinstance(event, TickEvent):
-            self.start = False
-        if isinstance(event, StartEvent):
-            self.connect = False
-
+        actions = {
+                QuitEvent : lambda: setattr(self, 'keep_going', False),
+                TickEvent : lambda: setattr(self, 'start', False),
+                StartEvent : lambda: setattr(self, 'connect', False),
+                }
+        actions.get(event, lambda: None)()
 
 class KeyboardController:
     def __init__(self, eventManager):
         self.event_manager = eventManager
-        self.event_manager.register_listener(self)
 
     def notify(self, event):
-
+        print 'keyboard notified with event', event
         quit = None
 
         # Quitting
@@ -166,6 +146,7 @@ class KeyboardController:
 
             if pressed[pygame.K_SPACE]:
                 keys_pressed = json.dumps(['SPACE'], separators=(',',':'))
+                print repr(SERVER), repr(PORT)
                 s.sendto(keys_pressed, (SERVER, PORT))
 
         if isinstance(event, StartEvent):

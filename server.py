@@ -19,7 +19,7 @@ TICK_TIME = 31
 # Set listening IP
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 try:
-    s.connect(('google.com', 0))
+    s.connect(('google.com', 1))
     IP = sys.argv[1] if len(sys.argv) > 1 else s.getsockname()[0]
 except socket.gaierror:
     IP = sys.argv[1] if len(sys.argv) > 1 else 'You are not connected to the internet'
