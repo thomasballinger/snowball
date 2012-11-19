@@ -234,7 +234,7 @@ class PrintView:
         self.event_manager.register_listener(self)
 
     def notify(self, event):
-        
+
         if isinstance(event, ConnectEvent):
             pass
 
